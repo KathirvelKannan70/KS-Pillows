@@ -2,8 +2,8 @@ import logo from "../assets/logo.jpg";
 
 export default function Footer() {
   return (
-    <footer className="bg-white border-t mt-16">
-      <div className="max-w-7xl mx-auto px-6 py-10">
+    <footer className="bg-white border-t mt-8">
+      <div className="max-w-7xl mx-auto px-6 py-6">
 
         {/* Top section */}
         <div className="flex flex-col items-center gap-6">
