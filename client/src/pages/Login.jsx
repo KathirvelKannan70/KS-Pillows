@@ -1,7 +1,11 @@
 import { useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,21 +20,19 @@ export default function Login() {
       );
 
       if (res.data.success) {
-        // ✅ STORE TOKEN (VERY IMPORTANT)
+        // ✅ store auth
         localStorage.setItem("token", res.data.token);
-
-        // ✅ STORE USER NAME (for navbar)
         localStorage.setItem("userName", res.data.name);
 
-        alert("Login successful");
+        toast.success("Welcome back! 🎉");
 
-        // ✅ redirect to home
-        window.location.href = "/";
+        // ✅ smooth redirect
+        setTimeout(() => navigate("/"), 800);
       } else {
-        alert(res.data.message);
+        toast.error(res.data.message);
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+      toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -59,6 +61,7 @@ export default function Login() {
             Login to your account
           </h2>
 
+          {/* Email */}
           <input
             type="email"
             placeholder="Email"
@@ -68,8 +71,8 @@ export default function Login() {
             }
           />
 
-          {/* Password with toggle */}
-          <div className="relative mb-6">
+          {/* Password */}
+          <div className="relative mb-4">
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
@@ -87,6 +90,10 @@ export default function Login() {
             </button>
           </div>
 
+          {/* 🔥 NEW USER LINK */}
+
+
+          {/* Button */}
           <button
             onClick={handleLogin}
             disabled={loading}
@@ -94,6 +101,15 @@ export default function Login() {
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
+                    <p className="text-sm text-gray-600 mb-6 mt-3 text-center">
+            New User?{" "}
+            <Link
+              to="/signup"
+              className="text-red-600 font-semibold hover:underline"
+            >
+              Create Account
+            </Link>
+          </p>
         </div>
       </div>
     </div>

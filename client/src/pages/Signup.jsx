@@ -1,7 +1,12 @@
 import { useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
+import Loader from "../components/Loader";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -14,8 +19,18 @@ export default function Signup() {
 
   const handleSignup = async () => {
     // ✅ basic validation
-    if (!form.firstName || !form.lastName || !form.email || !form.password) {
-      alert("Please fill all fields");
+    if (
+      !form.firstName ||
+      !form.lastName ||
+      !form.email ||
+      !form.password
+    ) {
+      toast.error("Please fill all fields");
+      return;
+    }
+
+    if (form.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
       return;
     }
 
@@ -27,17 +42,18 @@ export default function Signup() {
         form
       );
 
-      if (!res.data.success) {
-        alert(res.data.message);
-        return;
+      if (res.data.success) {
+        toast.success("Account created successfully 🎉");
+
+        // ✅ redirect to login after short delay
+        setTimeout(() => {
+          navigate("/login");
+        }, 1400);
+      } else {
+        toast.error(res.data.message);
       }
-
-      alert("Account created successfully ✅");
-
-      // ✅ redirect to login
-      window.location.href = "/login";
     } catch (err) {
-      alert(err.response?.data?.message || "Signup failed");
+      toast.error(err.response?.data?.message || "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -45,7 +61,6 @@ export default function Signup() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] grid md:grid-cols-2">
-
       {/* 🔴 Left branding */}
       <div className="hidden md:flex bg-red-600 text-white items-center justify-center p-10">
         <div className="max-w-md">
@@ -91,7 +106,7 @@ export default function Signup() {
             }
           />
 
-          {/* Password */}
+          {/* 🔐 Password */}
           <div className="relative mb-6">
             <input
               type={showPassword ? "text" : "password"}
@@ -113,21 +128,10 @@ export default function Signup() {
           <button
             onClick={handleSignup}
             disabled={loading}
-            className="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg font-semibold transition"
+            className="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
           >
-            {loading ? "Creating..." : "Create Account"}
+            {loading ? <Loader small /> : "Create Account"}
           </button>
-
-          {/* ✅ Login redirect helper */}
-          <p className="text-sm text-center mt-4 text-gray-500">
-            Already have an account?{" "}
-            <span
-              onClick={() => (window.location.href = "/login")}
-              className="text-red-600 cursor-pointer font-medium"
-            >
-              Login
-            </span>
-          </p>
         </div>
       </div>
     </div>

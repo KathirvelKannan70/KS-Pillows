@@ -18,6 +18,7 @@ import jwt from "jsonwebtoken";
 
 import User from "./models/User.js";
 import Cart from "./models/Cart.js";
+import Product from "./models/Product.js"; // ✅ NEW
 
 const app = express();
 
@@ -133,6 +134,40 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+/* =======================================================
+   🛍️ PRODUCT APIs (NEW — VERY IMPORTANT)
+======================================================= */
+
+/* ✅ GET PRODUCTS BY CATEGORY */
+app.get("/api/products/:category", async (req, res) => {
+  try {
+    const products = await Product.find({
+      category: req.params.category,
+    }).sort({ createdAt: -1 });
+
+    res.json({ success: true, products });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ✅ GET SINGLE PRODUCT */
+app.get("/api/product/:id", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    res.json({ success: true, product });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* =======================================================
+   🛒 CART APIs
+======================================================= */
+
 /* ================= ADD TO CART ================= */
 app.post("/api/cart/add", authMiddleware, async (req, res) => {
   try {
@@ -212,7 +247,6 @@ app.post("/api/cart/remove", authMiddleware, async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
-
 
 /* ================= SERVER ================= */
 app.listen(5000, () =>
