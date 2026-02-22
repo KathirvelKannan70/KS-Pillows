@@ -1,18 +1,54 @@
 import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ FORCE LOAD ENV
+dotenv.config({ path: path.join(__dirname, ".env") });
+
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 import User from "./models/User.js";
-import Cart from "./models/Cart.js"; // ✅ NEW
+import Cart from "./models/Cart.js";
 
 const app = express();
 
+/* ================= MIDDLEWARE ================= */
 app.use(cors());
 app.use(express.json());
+
+/* ================= AUTH MIDDLEWARE ================= */
+const authMiddleware = (req, res, next) => {
+  try {
+    const header = req.headers.authorization;
+
+    if (!header) {
+      return res
+        .status(401)
+        .json({ success: false, message: "No token provided" });
+    }
+
+    const token = header.split(" ")[1];
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    req.userId = decoded.userId;
+
+    next();
+  } catch (err) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid token" });
+  }
+};
 
 /* ================= MONGODB ================= */
 mongoose
@@ -26,8 +62,12 @@ app.post("/api/signup", async (req, res) => {
     const { firstName, lastName, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
-      return res.json({ success: false, message: "User already exists" });
+      return res.json({
+        success: false,
+        message: "User already exists",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -41,7 +81,10 @@ app.post("/api/signup", async (req, res) => {
 
     await user.save();
 
-    res.json({ success: true, message: "User registered" });
+    res.json({
+      success: true,
+      message: "User registered successfully",
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ success: false });
@@ -56,16 +99,34 @@ app.post("/api/login", async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res.json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.json({ success: false, message: "Invalid password" });
+      return res.json({
+        success: false,
+        message: "Invalid password",
+      });
     }
 
-    res.json({ success: true, message: "Login successful" });
+    // ✅ CREATE JWT TOKEN
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      name: user.firstName,
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ success: false });
@@ -73,15 +134,16 @@ app.post("/api/login", async (req, res) => {
 });
 
 /* ================= ADD TO CART ================= */
-app.post("/api/cart/add", async (req, res) => {
+app.post("/api/cart/add", authMiddleware, async (req, res) => {
   try {
-    const { userEmail, product, quantity } = req.body;
+    const { product, quantity } = req.body;
+    const userId = req.userId;
 
-    let cart = await Cart.findOne({ userEmail });
+    let cart = await Cart.findOne({ userId });
 
     if (!cart) {
       cart = new Cart({
-        userEmail,
+        userId,
         items: [{ ...product, quantity }],
       });
     } else {
@@ -98,33 +160,40 @@ app.post("/api/cart/add", async (req, res) => {
 
     await cart.save();
 
-    res.json({ success: true, message: "Added to cart" });
+    res.json({
+      success: true,
+      message: "Added to cart",
+    });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ success: false, message: "Cart error" });
+    res.status(500).json({
+      success: false,
+      message: "Cart error",
+    });
   }
 });
 
 /* ================= GET CART ================= */
-app.post("/api/cart", async (req, res) => {
+app.get("/api/cart", authMiddleware, async (req, res) => {
   try {
-    const { userEmail } = req.body;
+    const userId = req.userId;
 
-    const cart = await Cart.findOne({ userEmail });
+    const cart = await Cart.findOne({ userId });
 
     res.json(cart || { items: [] });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ success: false, message: "Cart fetch error" });
+    res.status(500).json({ success: false });
   }
 });
 
 /* ================= REMOVE ITEM ================= */
-app.post("/api/cart/remove", async (req, res) => {
+app.post("/api/cart/remove", authMiddleware, async (req, res) => {
   try {
-    const { userEmail, productId } = req.body;
+    const { productId } = req.body;
+    const userId = req.userId;
 
-    const cart = await Cart.findOne({ userEmail });
+    const cart = await Cart.findOne({ userId });
 
     if (!cart) return res.json({ success: true });
 
@@ -134,12 +203,16 @@ app.post("/api/cart/remove", async (req, res) => {
 
     await cart.save();
 
-    res.json({ success: true, message: "Item removed" });
+    res.json({
+      success: true,
+      message: "Item removed",
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ success: false });
   }
 });
+
 
 /* ================= SERVER ================= */
 app.listen(5000, () =>

@@ -8,17 +8,34 @@ export default function Signup() {
     email: "",
     password: "",
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
+    // ✅ basic validation
+    if (!form.firstName || !form.lastName || !form.email || !form.password) {
+      alert("Please fill all fields");
+      return;
+    }
+
     try {
       setLoading(true);
+
       const res = await axios.post(
         "http://localhost:5000/api/signup",
         form
       );
-      alert(res.data.message);
+
+      if (!res.data.success) {
+        alert(res.data.message);
+        return;
+      }
+
+      alert("Account created successfully ✅");
+
+      // ✅ redirect to login
+      window.location.href = "/login";
     } catch (err) {
       alert(err.response?.data?.message || "Signup failed");
     } finally {
@@ -66,6 +83,7 @@ export default function Signup() {
           />
 
           <input
+            type="email"
             placeholder="Email"
             className="w-full border p-3 mb-3 rounded-lg focus:outline-red-500"
             onChange={(e) =>
@@ -73,6 +91,7 @@ export default function Signup() {
             }
           />
 
+          {/* Password */}
           <div className="relative mb-6">
             <input
               type={showPassword ? "text" : "password"}
@@ -98,6 +117,17 @@ export default function Signup() {
           >
             {loading ? "Creating..." : "Create Account"}
           </button>
+
+          {/* ✅ Login redirect helper */}
+          <p className="text-sm text-center mt-4 text-gray-500">
+            Already have an account?{" "}
+            <span
+              onClick={() => (window.location.href = "/login")}
+              className="text-red-600 cursor-pointer font-medium"
+            >
+              Login
+            </span>
+          </p>
         </div>
       </div>
     </div>

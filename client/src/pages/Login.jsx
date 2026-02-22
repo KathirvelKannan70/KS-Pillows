@@ -9,11 +9,26 @@ export default function Login() {
   const handleLogin = async () => {
     try {
       setLoading(true);
+
       const res = await axios.post(
         "http://localhost:5000/api/login",
         form
       );
-      alert(res.data.message);
+
+      if (res.data.success) {
+        // ✅ STORE TOKEN (VERY IMPORTANT)
+        localStorage.setItem("token", res.data.token);
+
+        // ✅ STORE USER NAME (for navbar)
+        localStorage.setItem("userName", res.data.name);
+
+        alert("Login successful");
+
+        // ✅ redirect to home
+        window.location.href = "/";
+      } else {
+        alert(res.data.message);
+      }
     } catch (err) {
       alert(err.response?.data?.message || "Login failed");
     } finally {
