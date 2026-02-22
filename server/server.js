@@ -8,8 +8,6 @@ const __dirname = path.dirname(__filename);
 // ✅ FORCE LOAD ENV
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-console.log("JWT_SECRET:", process.env.JWT_SECRET);
-
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -18,7 +16,7 @@ import jwt from "jsonwebtoken";
 
 import User from "./models/User.js";
 import Cart from "./models/Cart.js";
-import Product from "./models/Product.js"; // ✅ NEW
+import Product from "./models/Product.js";
 
 const app = express();
 
@@ -56,6 +54,10 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Atlas Connected ✅"))
   .catch((err) => console.log(err));
+
+/* =======================================================
+   🔐 AUTH APIs
+======================================================= */
 
 /* ================= SIGNUP ================= */
 app.post("/api/signup", async (req, res) => {
@@ -115,7 +117,6 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
-    // ✅ CREATE JWT TOKEN
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
@@ -135,10 +136,10 @@ app.post("/api/login", async (req, res) => {
 });
 
 /* =======================================================
-   🛍️ PRODUCT APIs (NEW — VERY IMPORTANT)
+   🛍️ PRODUCT APIs
 ======================================================= */
 
-/* ✅ GET PRODUCTS BY CATEGORY */
+/* ================= GET PRODUCTS BY CATEGORY ================= */
 app.get("/api/products/:category", async (req, res) => {
   try {
     const products = await Product.find({
@@ -152,7 +153,7 @@ app.get("/api/products/:category", async (req, res) => {
   }
 });
 
-/* ✅ GET SINGLE PRODUCT */
+/* ================= GET SINGLE PRODUCT ================= */
 app.get("/api/product/:id", async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -211,11 +212,47 @@ app.post("/api/cart/add", authMiddleware, async (req, res) => {
 /* ================= GET CART ================= */
 app.get("/api/cart", authMiddleware, async (req, res) => {
   try {
+    const cart = await Cart.findOne({ userId: req.userId });
+
+    res.json(cart || { items: [] });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ================= UPDATE QUANTITY ================= */
+app.post("/api/cart/update", authMiddleware, async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
     const userId = req.userId;
 
     const cart = await Cart.findOne({ userId });
 
-    res.json(cart || { items: [] });
+    if (!cart) {
+      return res.json({ success: false, message: "Cart not found" });
+    }
+
+    const item = cart.items.find(
+      (i) => i.productId === productId
+    );
+
+    if (!item) {
+      return res.json({ success: false, message: "Item not found" });
+    }
+
+    // ✅ remove if qty 0
+    if (quantity <= 0) {
+      cart.items = cart.items.filter(
+        (i) => i.productId !== productId
+      );
+    } else {
+      item.quantity = quantity;
+    }
+
+    await cart.save();
+
+    res.json({ success: true });
   } catch (err) {
     console.log(err);
     res.status(500).json({ success: false });
@@ -226,9 +263,8 @@ app.get("/api/cart", authMiddleware, async (req, res) => {
 app.post("/api/cart/remove", authMiddleware, async (req, res) => {
   try {
     const { productId } = req.body;
-    const userId = req.userId;
 
-    const cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId: req.userId });
 
     if (!cart) return res.json({ success: true });
 
@@ -248,7 +284,9 @@ app.post("/api/cart/remove", authMiddleware, async (req, res) => {
   }
 });
 
-/* ================= SERVER ================= */
+/* =======================================================
+   🚀 SERVER
+======================================================= */
 app.listen(5000, () =>
   console.log("Server running on port 5000 🚀")
 );

@@ -1,7 +1,7 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-
+import Cart from "./pages/Cart";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -30,7 +30,11 @@ function App() {
           {/* 🌐 Public */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
-
+          <Route path="/cart"  element={<ProtectedRoute>
+            <Cart />
+            </ProtectedRoute>
+        }
+/>
           {/* 🔐 Block if already logged in */}
           <Route
             path="/login"

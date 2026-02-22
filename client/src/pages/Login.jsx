@@ -23,7 +23,7 @@ export default function Login() {
         // ✅ store auth
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("userName", res.data.name);
-
+        window.dispatchEvent(new Event("authChanged"));
         toast.success("Welcome back! 🎉");
 
         // ✅ smooth redirect
