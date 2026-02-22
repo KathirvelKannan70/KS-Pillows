@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import About from "./pages/About";
+import Checkout from "./pages/Checkout";
 import CategoryProducts from "./pages/CategoryProducts";
 import ProductDetails from "./pages/ProductDetails";
 
@@ -66,6 +67,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+/>
         </Routes>
       </main>
 

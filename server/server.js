@@ -283,7 +283,78 @@ app.post("/api/cart/remove", authMiddleware, async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+/* ================= ADD ADDRESS ================= */
+app.post("/api/address/add", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const addressData = req.body;
 
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.addresses.push(addressData);
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Address added",
+      addresses: user.addresses,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Address save failed",
+    });
+  }
+});
+/* ================= GET ADDRESSES ================= */
+app.get("/api/address", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const user = await User.findById(userId).select("addresses");
+
+    res.json({
+      success: true,
+      addresses: user?.addresses || [],
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Fetch address failed",
+    });
+  }
+});
+/* ================= DELETE ADDRESS ================= */
+app.post("/api/address/delete", authMiddleware, async (req, res) => {
+  try {
+    const { addressId } = req.body;
+    const userId = req.userId;
+
+    await User.findByIdAndUpdate(userId, {
+      $pull: { addresses: { _id: addressId } },
+    });
+
+    res.json({
+      success: true,
+      message: "Address deleted",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Delete failed",
+    });
+  }
+});
 /* =======================================================
    🚀 SERVER
 ======================================================= */

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 
 export default function Cart() {
+  const navigate = useNavigate();
+
   const [cart, setCart] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +51,7 @@ export default function Cart() {
         quantity: newQty,
       });
 
-      fetchCart();
+      await fetchCart();
       window.dispatchEvent(new Event("cartUpdated"));
     } catch (err) {
       console.error("Qty update error:", err);
@@ -63,7 +66,7 @@ export default function Cart() {
 
       toast.success("Item removed");
 
-      fetchCart();
+      await fetchCart();
       window.dispatchEvent(new Event("cartUpdated"));
     } catch (err) {
       console.error("Remove error:", err);
@@ -72,10 +75,11 @@ export default function Cart() {
   };
 
   /* ================= TOTALS ================= */
-  const totalPrice = cart.items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const totalPrice =
+    cart.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    ) || 0;
 
   const totalItems =
     cart.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
@@ -168,7 +172,11 @@ export default function Cart() {
               <span className="text-red-600">₹{totalPrice}</span>
             </div>
 
-            <button className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition">
+            {/* ✅ FIXED CHECKOUT NAVIGATION */}
+            <button
+              onClick={() => navigate("/checkout")}
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition"
+            >
               Proceed to Checkout
             </button>
           </div>
