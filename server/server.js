@@ -18,6 +18,7 @@ import User from "./models/User.js";
 import Cart from "./models/Cart.js";
 import Product from "./models/Product.js";
 import Address from "./models/Address.js";
+import Order from "./models/Order.js";
 
 const app = express();
 
@@ -360,7 +361,90 @@ app.post("/api/address/delete", authMiddleware, async (req, res) => {
     });
   }
 });
+/* ================= CREATE ORDER ================= */
+app.post("/api/orders/create", authMiddleware, async (req, res) => {
+  try {
+    const { addressId } = req.body;
+    const userId = req.userId;
 
+    // ✅ get address from Address collection (FIXED)
+    const selectedAddress = await Address.findOne({
+      _id: addressId,
+      userId,
+    });
+
+    if (!selectedAddress) {
+      return res.json({
+        success: false,
+        message: "Address not found",
+      });
+    }
+
+    // ✅ get cart
+    const cart = await Cart.findOne({ userId });
+
+    if (!cart || cart.items.length === 0) {
+      return res.json({
+        success: false,
+        message: "Cart is empty",
+      });
+    }
+
+    // ✅ totals
+    const totalItems = cart.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+
+    const totalPrice = cart.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    // ✅ create order
+    const order = new Order({
+      userId,
+      items: cart.items,
+      address: selectedAddress, // ✅ now correct
+      totalItems,
+      totalPrice,
+    });
+
+    await order.save();
+
+    // ✅ clear cart
+    cart.items = [];
+    await cart.save();
+
+    res.json({
+      success: true,
+      message: "Order placed successfully",
+      orderId: order._id,
+    });
+  } catch (err) {
+    console.log("ORDER ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Order creation failed",
+    });
+  }
+});
+/* ================= GET USER ORDERS ================= */
+app.get("/api/orders", authMiddleware, async (req, res) => {
+  try {
+    const orders = await Order.find({
+      userId: req.userId,
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      orders,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false });
+  }
+});
 /* =======================================================
    🚀 SERVER
 ======================================================= */

@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ NEW
 import api from "../api/axios";
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 
 export default function Checkout() {
+  const navigate = useNavigate(); // ✅ NEW
+
   const [cart, setCart] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
 
-  // ⭐ NEW — saved addresses
+  // ⭐ saved addresses
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
 
@@ -75,14 +78,14 @@ export default function Checkout() {
       await api.post("/address/add", {
         fullName: address.name,
         phone: address.phone,
-        street: address.street, // ✅ FIXED
+        street: address.street,
         city: address.city,
         pincode: address.pincode,
       });
 
       toast.success("Address saved ✅");
 
-      // 🔥 refresh address list
+      // refresh
       fetchAddresses();
 
       // clear form
@@ -109,8 +112,25 @@ export default function Checkout() {
 
       setPlacingOrder(true);
 
-      // 🚀 later we connect orders API
+      const res = await api.post("/orders/create", {
+        addressId: selectedAddressId,
+      });
+
+      // ✅ proper success check
+      if (!res.data?.success) {
+        toast.error(res.data?.message || "Order failed");
+        return;
+      }
+
+      // ✅ success only here
       toast.success("Order placed successfully 🎉");
+
+      // update navbar badge
+      window.dispatchEvent(new Event("cartUpdated"));
+
+      // redirect
+      navigate("/orders");
+
     } catch (err) {
       console.error("Order error:", err);
       toast.error("Order failed");
@@ -133,7 +153,7 @@ export default function Checkout() {
         </div>
       ) : (
         <div className="grid lg:grid-cols-3 gap-10">
-
+          
           {/* ================= ADDRESS ================= */}
           <div className="lg:col-span-2 space-y-6">
 

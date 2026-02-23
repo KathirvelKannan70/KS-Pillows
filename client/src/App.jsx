@@ -9,7 +9,7 @@ import About from "./pages/About";
 import Checkout from "./pages/Checkout";
 import CategoryProducts from "./pages/CategoryProducts";
 import ProductDetails from "./pages/ProductDetails";
-
+import Orders from "./pages/Orders";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAuth from "./components/ProtectedAuth";
 
@@ -74,7 +74,15 @@ function App() {
               <Checkout />
             </ProtectedRoute>
           }
-/>
+          />
+          <Route
+          path="/orders"
+          element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          }
+        />
         </Routes>
       </main>
 
