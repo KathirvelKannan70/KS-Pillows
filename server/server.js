@@ -32,6 +32,7 @@ app.use(
       "https://ks-pillows-nd5s.vercel.app",
       "https://ks-pillows-nd5s.vercel.app/",
       "https://www.kspillows.in",
+      "https://kspillows.in",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
