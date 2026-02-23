@@ -30,11 +30,15 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://ks-pillows-nd5s.vercel.app",
+      "https://ks-pillows-nd5s.vercel.app/",
     ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
+app.options("*", cors());
 
 /* =======================================================
    🔐 AUTH MIDDLEWARE
@@ -68,6 +72,13 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Atlas Connected ✅"))
   .catch((err) => console.log(err));
+
+/* =======================================================
+   🏥 HEALTH CHECK
+======================================================= */
+app.get("/api/health", (req, res) => {
+  res.json({ success: true, message: "Server is running ✅" });
+});
 
 /* =======================================================
    🔐 AUTH APIs
