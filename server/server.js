@@ -29,7 +29,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://ks-pillows-nd5s.vercel.app/",
+      "https://ks-pillows-nd5s.vercel.app",
     ],
     credentials: true,
   })

@@ -5,7 +5,7 @@ import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 
 export default function ProductDetails() {
-  const { id } = useParams();
+  const { category, id } = useParams();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
