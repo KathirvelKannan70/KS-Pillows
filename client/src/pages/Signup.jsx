@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import toast from "react-hot-toast";
 import Loader from "../components/Loader";
 import { useNavigate } from "react-router-dom";
@@ -37,8 +37,8 @@ export default function Signup() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        "http://localhost:5000/api/signup",
+      const res = await api.post(
+        "/signup",
         form
       );
 

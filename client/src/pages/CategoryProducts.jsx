@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import Loader from "../components/Loader";
 
 export default function CategoryProducts() {
@@ -16,8 +16,8 @@ export default function CategoryProducts() {
       try {
         setLoading(true);
 
-        const res = await axios.get(
-          `/api/products/${category}`
+        const res = await api.get(
+          `/products/${category}`
         );
 
         if (res.data.success) {

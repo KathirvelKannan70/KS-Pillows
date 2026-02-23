@@ -14,7 +14,7 @@ export default function Login() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
+      const res = await api.post(
         "/login",
         form
       );
