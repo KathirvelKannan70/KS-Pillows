@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ FORCE LOAD ENV
+// ✅ Load ENV
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 import express from "express";
@@ -17,14 +17,19 @@ import jwt from "jsonwebtoken";
 import User from "./models/User.js";
 import Cart from "./models/Cart.js";
 import Product from "./models/Product.js";
+import Address from "./models/Address.js";
 
 const app = express();
 
-/* ================= MIDDLEWARE ================= */
+/* =======================================================
+   🧩 MIDDLEWARE
+======================================================= */
 app.use(cors());
 app.use(express.json());
 
-/* ================= AUTH MIDDLEWARE ================= */
+/* =======================================================
+   🔐 AUTH MIDDLEWARE
+======================================================= */
 const authMiddleware = (req, res, next) => {
   try {
     const header = req.headers.authorization;
@@ -36,11 +41,9 @@ const authMiddleware = (req, res, next) => {
     }
 
     const token = header.split(" ")[1];
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.userId = decoded.userId;
-
     next();
   } catch (err) {
     return res
@@ -49,7 +52,9 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-/* ================= MONGODB ================= */
+/* =======================================================
+   🗄️ MONGODB
+======================================================= */
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Atlas Connected ✅"))
@@ -213,7 +218,6 @@ app.post("/api/cart/add", authMiddleware, async (req, res) => {
 app.get("/api/cart", authMiddleware, async (req, res) => {
   try {
     const cart = await Cart.findOne({ userId: req.userId });
-
     res.json(cart || { items: [] });
   } catch (err) {
     console.log(err);
@@ -225,9 +229,8 @@ app.get("/api/cart", authMiddleware, async (req, res) => {
 app.post("/api/cart/update", authMiddleware, async (req, res) => {
   try {
     const { productId, quantity } = req.body;
-    const userId = req.userId;
 
-    const cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId: req.userId });
 
     if (!cart) {
       return res.json({ success: false, message: "Cart not found" });
@@ -241,7 +244,6 @@ app.post("/api/cart/update", authMiddleware, async (req, res) => {
       return res.json({ success: false, message: "Item not found" });
     }
 
-    // ✅ remove if qty 0
     if (quantity <= 0) {
       cart.items = cart.items.filter(
         (i) => i.productId !== productId
@@ -283,28 +285,29 @@ app.post("/api/cart/remove", authMiddleware, async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+
+/* =======================================================
+   📍 ADDRESS APIs (SEPARATE COLLECTION — PRO)
+======================================================= */
+
 /* ================= ADD ADDRESS ================= */
 app.post("/api/address/add", authMiddleware, async (req, res) => {
   try {
-    const userId = req.userId;
-    const addressData = req.body;
+    const address = new Address({
+      userId: req.userId,
+      fullName: req.body.fullName,
+      phone: req.body.phone,
+      street: req.body.street,
+      city: req.body.city,
+      pincode: req.body.pincode,
+    });
 
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    user.addresses.push(addressData);
-    await user.save();
+    await address.save();
 
     res.json({
       success: true,
-      message: "Address added",
-      addresses: user.addresses,
+      message: "Address saved",
+      address,
     });
   } catch (err) {
     console.log(err);
@@ -314,16 +317,17 @@ app.post("/api/address/add", authMiddleware, async (req, res) => {
     });
   }
 });
+
 /* ================= GET ADDRESSES ================= */
 app.get("/api/address", authMiddleware, async (req, res) => {
   try {
-    const userId = req.userId;
-
-    const user = await User.findById(userId).select("addresses");
+    const addresses = await Address.find({
+      userId: req.userId,
+    }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      addresses: user?.addresses || [],
+      addresses,
     });
   } catch (err) {
     console.log(err);
@@ -333,14 +337,15 @@ app.get("/api/address", authMiddleware, async (req, res) => {
     });
   }
 });
+
 /* ================= DELETE ADDRESS ================= */
 app.post("/api/address/delete", authMiddleware, async (req, res) => {
   try {
     const { addressId } = req.body;
-    const userId = req.userId;
 
-    await User.findByIdAndUpdate(userId, {
-      $pull: { addresses: { _id: addressId } },
+    await Address.findOneAndDelete({
+      _id: addressId,
+      userId: req.userId,
     });
 
     res.json({
@@ -355,6 +360,7 @@ app.post("/api/address/delete", authMiddleware, async (req, res) => {
     });
   }
 });
+
 /* =======================================================
    🚀 SERVER
 ======================================================= */

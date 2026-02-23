@@ -8,6 +8,10 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
 
+  // ⭐ NEW — saved addresses
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+
   const [address, setAddress] = useState({
     name: "",
     phone: "",
@@ -19,7 +23,6 @@ export default function Checkout() {
   /* ================= FETCH CART ================= */
   const fetchCart = async () => {
     try {
-      setLoading(true);
       const res = await api.get("/cart");
       setCart(res.data || { items: [] });
     } catch (err) {
@@ -30,8 +33,19 @@ export default function Checkout() {
     }
   };
 
+  /* ================= FETCH ADDRESSES ================= */
+  const fetchAddresses = async () => {
+    try {
+      const res = await api.get("/address");
+      setSavedAddresses(res.data.addresses || []);
+    } catch (err) {
+      console.error("Address fetch error", err);
+    }
+  };
+
   useEffect(() => {
     fetchCart();
+    fetchAddresses();
   }, []);
 
   /* ================= TOTALS ================= */
@@ -44,10 +58,9 @@ export default function Checkout() {
       0
     ) || 0;
 
-  /* ================= PLACE ORDER ================= */
-  const handlePlaceOrder = async () => {
+  /* ================= SAVE NEW ADDRESS ================= */
+  const handleSaveAddress = async () => {
     try {
-      // ✅ validation
       if (
         !address.name ||
         !address.phone ||
@@ -59,21 +72,20 @@ export default function Checkout() {
         return;
       }
 
-      setPlacingOrder(true);
-
-      // ✅ SAVE ADDRESS TO MONGODB
       await api.post("/address/add", {
         fullName: address.name,
         phone: address.phone,
-        houseNo: address.street,
+        street: address.street, // ✅ FIXED
         city: address.city,
         pincode: address.pincode,
-        type: "Home",
       });
 
-      toast.success("Address saved & Order placed 🎉");
+      toast.success("Address saved ✅");
 
-      // ✅ clear form
+      // 🔥 refresh address list
+      fetchAddresses();
+
+      // clear form
       setAddress({
         name: "",
         phone: "",
@@ -81,7 +93,24 @@ export default function Checkout() {
         city: "",
         pincode: "",
       });
+    } catch (err) {
+      console.error(err);
+      toast.error("Address save failed");
+    }
+  };
 
+  /* ================= PLACE ORDER ================= */
+  const handlePlaceOrder = async () => {
+    try {
+      if (!selectedAddressId) {
+        toast.error("Please select delivery address");
+        return;
+      }
+
+      setPlacingOrder(true);
+
+      // 🚀 later we connect orders API
+      toast.success("Order placed successfully 🎉");
     } catch (err) {
       console.error("Order error:", err);
       toast.error("Order failed");
@@ -106,57 +135,109 @@ export default function Checkout() {
         <div className="grid lg:grid-cols-3 gap-10">
 
           {/* ================= ADDRESS ================= */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm">
-            <h2 className="text-xl font-bold mb-6">
-              Delivery Address
-            </h2>
+          <div className="lg:col-span-2 space-y-6">
 
-            <div className="grid md:grid-cols-2 gap-4">
+            {/* ⭐ SAVED ADDRESSES */}
+            {savedAddresses.length > 0 && (
+              <div className="bg-white p-6 rounded-2xl shadow-sm">
+                <h2 className="text-xl font-bold mb-4">
+                  Select Address
+                </h2>
 
-              <input
-                value={address.name}
-                placeholder="Full Name"
-                className="border p-3 rounded-lg focus:outline-red-500"
-                onChange={(e) =>
-                  setAddress({ ...address, name: e.target.value })
-                }
-              />
+                <div className="space-y-3">
+                  {savedAddresses.map((addr) => (
+                    <label
+                      key={addr._id}
+                      className={`block border rounded-xl p-4 cursor-pointer ${
+                        selectedAddressId === addr._id
+                          ? "border-red-600 bg-red-50"
+                          : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="address"
+                        className="mr-2"
+                        checked={selectedAddressId === addr._id}
+                        onChange={() =>
+                          setSelectedAddressId(addr._id)
+                        }
+                      />
 
-              <input
-                value={address.phone}
-                placeholder="Phone Number"
-                className="border p-3 rounded-lg focus:outline-red-500"
-                onChange={(e) =>
-                  setAddress({ ...address, phone: e.target.value })
-                }
-              />
+                      <span className="font-semibold">
+                        {addr.fullName}
+                      </span>
+                      <p className="text-sm text-gray-600">
+                        {addr.street}, {addr.city} - {addr.pincode}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        📞 {addr.phone}
+                      </p>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
-              <input
-                value={address.street}
-                placeholder="Street Address"
-                className="border p-3 rounded-lg md:col-span-2 focus:outline-red-500"
-                onChange={(e) =>
-                  setAddress({ ...address, street: e.target.value })
-                }
-              />
+            {/* ⭐ ADD NEW ADDRESS */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm">
+              <h2 className="text-xl font-bold mb-6">
+                Add New Address
+              </h2>
 
-              <input
-                value={address.city}
-                placeholder="City"
-                className="border p-3 rounded-lg focus:outline-red-500"
-                onChange={(e) =>
-                  setAddress({ ...address, city: e.target.value })
-                }
-              />
+              <div className="grid md:grid-cols-2 gap-4">
+                <input
+                  value={address.name}
+                  placeholder="Full Name"
+                  className="border p-3 rounded-lg focus:outline-red-500"
+                  onChange={(e) =>
+                    setAddress({ ...address, name: e.target.value })
+                  }
+                />
 
-              <input
-                value={address.pincode}
-                placeholder="Pincode"
-                className="border p-3 rounded-lg focus:outline-red-500"
-                onChange={(e) =>
-                  setAddress({ ...address, pincode: e.target.value })
-                }
-              />
+                <input
+                  value={address.phone}
+                  placeholder="Phone Number"
+                  className="border p-3 rounded-lg focus:outline-red-500"
+                  onChange={(e) =>
+                    setAddress({ ...address, phone: e.target.value })
+                  }
+                />
+
+                <input
+                  value={address.street}
+                  placeholder="Street Address"
+                  className="border p-3 rounded-lg md:col-span-2 focus:outline-red-500"
+                  onChange={(e) =>
+                    setAddress({ ...address, street: e.target.value })
+                  }
+                />
+
+                <input
+                  value={address.city}
+                  placeholder="City"
+                  className="border p-3 rounded-lg focus:outline-red-500"
+                  onChange={(e) =>
+                    setAddress({ ...address, city: e.target.value })
+                  }
+                />
+
+                <input
+                  value={address.pincode}
+                  placeholder="Pincode"
+                  className="border p-3 rounded-lg focus:outline-red-500"
+                  onChange={(e) =>
+                    setAddress({ ...address, pincode: e.target.value })
+                  }
+                />
+              </div>
+
+              <button
+                onClick={handleSaveAddress}
+                className="mt-4 bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-black"
+              >
+                Save Address
+              </button>
             </div>
           </div>
 
@@ -199,7 +280,7 @@ export default function Checkout() {
               disabled={placingOrder}
               className="w-full mt-6 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white py-3 rounded-xl font-semibold transition"
             >
-              {placingOrder ? "Placing Order..." : "Place Order 🚀"}
+              {placingOrder ? "Placing Order..." : "Place Order"}
             </button>
           </div>
         </div>
