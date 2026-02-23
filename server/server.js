@@ -31,7 +31,7 @@ app.use(
       "http://localhost:5173",
       "https://ks-pillows-nd5s.vercel.app",
       "https://ks-pillows-nd5s.vercel.app/",
-      "https://kspillows.in",
+      "https://www.kspillows.in",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
