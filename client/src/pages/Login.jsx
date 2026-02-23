@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import toast from "react-hot-toast";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -15,7 +15,7 @@ export default function Login() {
       setLoading(true);
 
       const res = await axios.post(
-        "http://localhost:5000/api/login",
+        "/login",
         form
       );
 
