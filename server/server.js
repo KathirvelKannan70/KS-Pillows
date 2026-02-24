@@ -16,6 +16,7 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { OAuth2Client } from "google-auth-library";
 import rateLimit from "express-rate-limit";
 import { body, param, validationResult } from "express-validator";
 
@@ -206,6 +207,49 @@ app.get("/api/verify-email/:token", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* ================= GOOGLE OAUTH ================= */
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+app.post("/api/auth/google", async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ success: false, message: "No credential" });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const { email, given_name, family_name, sub: googleId } = ticket.getPayload();
+
+    // Find or create user
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({
+        firstName: given_name || "User",
+        lastName: family_name || "",
+        email,
+        password: await bcrypt.hash(googleId + process.env.JWT_SECRET, 10),
+        isVerified: true,
+      });
+      await user.save();
+    } else if (!user.isVerified) {
+      user.isVerified = true;
+      await user.save();
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, isAdmin: user.isAdmin },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ success: true, token, name: user.firstName, isAdmin: user.isAdmin });
+  } catch (err) {
+    console.error("Google OAuth error:", err.message);
+    res.status(401).json({ success: false, message: "Google login failed" });
   }
 });
 

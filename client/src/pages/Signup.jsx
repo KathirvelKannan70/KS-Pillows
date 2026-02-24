@@ -2,6 +2,7 @@ import { useState } from "react";
 import api from "../api/axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -16,6 +17,26 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await api.post("/auth/google", {
+        credential: credentialResponse.credential,
+      });
+      if (res.data.success) {
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("userName", res.data.name);
+        localStorage.setItem("isAdmin", "false");
+        window.dispatchEvent(new Event("authChanged"));
+        toast.success(`Welcome, ${res.data.name}! 🎉`);
+        setTimeout(() => navigate("/"), 800);
+      } else {
+        toast.error(res.data.message);
+      }
+    } catch (err) {
+      toast.error("Google signup failed");
+    }
+  };
 
   const handleSignup = async () => {
     // ✅ basic validation
@@ -154,6 +175,24 @@ export default function Signup() {
               </span>
             ) : "Create Account"}
           </button>
+
+          {/* ── Divider ── */}
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Google Signup */}
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error("Google signup failed")}
+              width="360"
+              text="continue_with"
+              shape="rectangular"
+            />
+          </div>
         </div>
       </div>
     </div>
