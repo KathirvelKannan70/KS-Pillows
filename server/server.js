@@ -663,31 +663,23 @@ app.post(
         return res.status(401).json({ success: false, message: "Invalid password" });
       }
 
-      // Generate OTP
+      // Generate OTP and store it
       const otp = generateOTP();
       otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
-      // Send via both channels simultaneously
-      const [emailResult, smsResult] = await Promise.allSettled([
-        sendEmailOTP(email, otp),
-        sendSMSOTP(otp),
-      ]);
-
-      if (emailResult.status === "rejected") {
-        console.error("Email OTP failed:", emailResult.reason?.message);
-      }
-      if (smsResult.status === "rejected") {
-        console.error("SMS OTP failed:", smsResult.reason?.message);
-      }
-
-      // If both failed, inform admin
-      if (emailResult.status === "rejected" && smsResult.status === "rejected") {
-        return res.status(500).json({ success: false, message: "Failed to send OTP. Check server config." });
-      }
-
+      // ✅ Respond to client IMMEDIATELY — don't wait for email/SMS
       res.json({
         success: true,
         message: `OTP sent to your email${process.env.ADMIN_PHONE ? " and phone" : ""}`,
+      });
+
+      // Send OTP in background (fire-and-forget)
+      Promise.allSettled([
+        sendEmailOTP(email, otp),
+        sendSMSOTP(otp),
+      ]).then(([emailResult, smsResult]) => {
+        if (emailResult.status === "rejected") console.error("Email OTP failed:", emailResult.reason?.message);
+        if (smsResult.status === "rejected") console.error("SMS OTP failed:", smsResult.reason?.message);
       });
     } catch (err) {
       console.error(err);
