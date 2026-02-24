@@ -66,21 +66,35 @@ function App() {
           {/* � Product details - public, only add to cart needs login */}
           <Route path="/product/:category/:id" element={<ProductDetails />} />
           <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute>
-              <Checkout />
-            </ProtectedRoute>
-          }
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
           />
           <Route
-          path="/orders"
-          element={
-            <ProtectedRoute>
-              <Orders />
-            </ProtectedRoute>
-          }
-        />
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <Orders />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 🔴 404 */}
+          <Route
+            path="*"
+            element={
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                <h1 className="text-6xl font-bold text-red-600 mb-4">404</h1>
+                <p className="text-xl text-gray-600 mb-6">Page not found</p>
+                <a href="/" className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+                  Go Home
+                </a>
+              </div>
+            }
+          />
         </Routes>
       </main>
 

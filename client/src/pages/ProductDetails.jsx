@@ -62,12 +62,7 @@ export default function ProductDetails() {
       setAdding(true);
 
       await api.post("/cart/add", {
-        product: {
-          productId: product._id,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-        },
+        productId: product._id,
         quantity: 1,
       });
 

@@ -46,6 +46,19 @@ export default function Checkout() {
     }
   };
 
+  /* ================= DELETE ADDRESS ================= */
+  const handleDeleteAddress = async (addressId) => {
+    try {
+      await api.delete(`/address/${addressId}`);
+      toast.success("Address removed");
+      fetchAddresses();
+      if (selectedAddressId === addressId) setSelectedAddressId(null);
+    } catch (err) {
+      console.error("Address delete error", err);
+      toast.error("Failed to delete address");
+    }
+  };
+
   useEffect(() => {
     fetchCart();
     fetchAddresses();
@@ -98,7 +111,12 @@ export default function Checkout() {
       });
     } catch (err) {
       console.error(err);
-      toast.error("Address save failed");
+      // ✅ Show server validation message if available
+      const msg =
+        err.response?.data?.errors?.[0]?.msg ||
+        err.response?.data?.message ||
+        "Address save failed";
+      toast.error(msg);
     }
   };
 
@@ -153,7 +171,7 @@ export default function Checkout() {
         </div>
       ) : (
         <div className="grid lg:grid-cols-3 gap-10">
-          
+
           {/* ================= ADDRESS ================= */}
           <div className="lg:col-span-2 space-y-6">
 
@@ -168,31 +186,42 @@ export default function Checkout() {
                   {savedAddresses.map((addr) => (
                     <label
                       key={addr._id}
-                      className={`block border rounded-xl p-4 cursor-pointer ${
-                        selectedAddressId === addr._id
-                          ? "border-red-600 bg-red-50"
-                          : ""
-                      }`}
+                      className={`block border rounded-xl p-4 cursor-pointer ${selectedAddressId === addr._id
+                        ? "border-red-600 bg-red-50"
+                        : ""
+                        }`}
                     >
-                      <input
-                        type="radio"
-                        name="address"
-                        className="mr-2"
-                        checked={selectedAddressId === addr._id}
-                        onChange={() =>
-                          setSelectedAddressId(addr._id)
-                        }
-                      />
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <input
+                            type="radio"
+                            name="address"
+                            className="mr-2"
+                            checked={selectedAddressId === addr._id}
+                            onChange={() => setSelectedAddressId(addr._id)}
+                          />
 
-                      <span className="font-semibold">
-                        {addr.fullName}
-                      </span>
-                      <p className="text-sm text-gray-600">
-                        {addr.street}, {addr.city} - {addr.pincode}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        📞 {addr.phone}
-                      </p>
+                          <span className="font-semibold">{addr.fullName}</span>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {addr.street}, {addr.city} - {addr.pincode}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            📞 {addr.phone}
+                          </p>
+                        </div>
+
+                        {/* ✅ Delete address */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleDeleteAddress(addr._id);
+                          }}
+                          className="text-xs text-red-500 hover:text-red-700 shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </label>
                   ))}
                 </div>

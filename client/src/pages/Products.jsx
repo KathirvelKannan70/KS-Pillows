@@ -1,41 +1,8 @@
 import { useNavigate } from "react-router-dom";
+import { CATEGORIES } from "../utils/categories";
 
 export default function Products() {
   const navigate = useNavigate();
-
-  // ✅ All product categories
-  const products = [
-    {
-      name: "Kapok Pillow",
-      slug: "kapok-pillow",
-      image:
-        "https://images.unsplash.com/photo-1582582621959-48d27397dc69?q=80&w=800",
-    },
-    {
-      name: "Recron Pillow",
-      slug: "recron-pillow",
-      image:
-        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=800",
-    },
-    {
-      name: "Kapok Mattresses",
-      slug: "kapok-mattresses",
-      image:
-        "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=800",
-    },
-    {
-      name: "Travel Quilt Bed",
-      slug: "travel-quilt-bed",
-      image:
-        "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?q=80&w=800",
-    },
-    {
-      name: "Korai Pai Bed",
-      slug: "korai-pai-bed",
-      image:
-        "https://images.unsplash.com/photo-1583845112239-97ef1341b271?q=80&w=800",
-    },
-  ];
 
   const handleClick = (slug) => {
     navigate(`/products/${slug}`);
@@ -55,7 +22,7 @@ export default function Products() {
 
       {/* 🔴 Products Grid */}
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
-        {products.map((item) => (
+        {CATEGORIES.map((item) => (
           <div
             key={item.slug}
             onClick={() => handleClick(item.slug)}
