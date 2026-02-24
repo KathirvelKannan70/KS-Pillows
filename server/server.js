@@ -192,6 +192,70 @@ app.get("/api/product/:id", async (req, res) => {
   }
 });
 
+/* ================= DYNAMIC SITEMAP ================= */
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    // Fetch all products from database
+    const products = await Product.find({}).sort({ createdAt: -1 });
+
+    // Get your domain
+    const domain = "https://www.kspillows.in";
+
+    // Create XML sitemap
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+
+    // Add static pages
+    const staticPages = [
+      { url: "/", changefreq: "weekly", priority: "1.0" },
+      { url: "/products", changefreq: "weekly", priority: "0.9" },
+      { url: "/about", changefreq: "monthly", priority: "0.7" },
+    ];
+
+    staticPages.forEach((page) => {
+      xml += `
+  <url>
+    <loc>${domain}${page.url}</loc>
+    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`;
+    });
+
+    // Add category pages
+    const categories = ["kapok-pillow", "recron-pillow", "kapok-mattresses", "travel-quilt-bed", "korai-pai-bed"];
+    categories.forEach((cat) => {
+      xml += `
+  <url>
+    <loc>${domain}/products/${cat}</loc>
+    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+    });
+
+    // Add individual product pages
+    products.forEach((product) => {
+      xml += `
+  <url>
+    <loc>${domain}/product/${product.category}/${product._id}</loc>
+    <lastmod>${new Date(product.updatedAt || product.createdAt).toISOString().split("T")[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+    });
+
+    xml += `
+</urlset>`;
+
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+  } catch (err) {
+    console.log("SITEMAP ERROR:", err);
+    res.status(500).json({ success: false, message: "Sitemap generation failed" });
+  }
+});
+
 /* =======================================================
    🛒 CART APIs
 ======================================================= */

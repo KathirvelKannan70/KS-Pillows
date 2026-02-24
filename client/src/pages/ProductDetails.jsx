@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
+import { setMetaTags } from "../utils/seoHelper";
 
 export default function ProductDetails() {
   const { category, id } = useParams();
@@ -21,7 +22,16 @@ export default function ProductDetails() {
         const res = await api.get(`/product/${id}`);
 
         if (res.data.success) {
-          setProduct(res.data.product);
+          const product = res.data.product;
+          setProduct(product);
+
+          // ✅ Set SEO meta tags
+          const productUrl = `https://www.kspillows.in/product/${category}/${id}`;
+          const productTitle = `${product.name} - KS Pillows`;
+          const productDescription = product.description || `Premium ${product.name} from KS Pillows. High quality comfort products.`;
+          const productImage = product.image || "https://images.unsplash.com/photo-1582582621959-48d27397dc69?q=80&w=800";
+
+          setMetaTags(productTitle, productDescription, productUrl, productImage);
         } else {
           setProduct(null);
         }
@@ -34,7 +44,7 @@ export default function ProductDetails() {
     };
 
     fetchProduct();
-  }, [id]);
+  }, [id, category]);
 
   /* ================= ADD TO CART ================= */
   const handleAddToCart = async () => {
