@@ -13,6 +13,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 import rateLimit from "express-rate-limit";
 import { body, param, validationResult } from "express-validator";
 
@@ -593,6 +594,156 @@ app.get("/api/orders", authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+/* =======================================================
+   🔐 OTP 2FA — ADMIN LOGIN
+======================================================= */
+
+// In-memory OTP store — { email: { otp, expiresAt } }
+const otpStore = new Map();
+
+// Generate 6-digit OTP
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// Send OTP via Gmail
+const sendEmailOTP = async (email, otp) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"KS Pillows Admin" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "Your Admin Login OTP — KS Pillows",
+    html: `
+      <div style="font-family:sans-serif;max-width:400px;margin:0 auto">
+        <h2 style="color:#dc2626">KS Pillows Admin Login</h2>
+        <p>Your one-time password (OTP) is:</p>
+        <h1 style="letter-spacing:8px;color:#111;font-size:36px">${otp}</h1>
+        <p style="color:#666">This OTP expires in <strong>5 minutes</strong>.</p>
+        <p style="color:#666;font-size:12px">If you didn't request this, ignore this email.</p>
+      </div>
+    `,
+  });
+};
+
+// Send OTP via Fast2SMS
+const sendSMSOTP = async (otp) => {
+  const phone = process.env.ADMIN_PHONE;
+  if (!phone || !process.env.FAST2SMS_API_KEY) return;
+
+  const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${process.env.FAST2SMS_API_KEY}&variables_values=${otp}&route=otp&numbers=${phone}`;
+  await fetch(url);
+};
+
+/* ≡ STEP 1 — Verify credentials, send OTP */
+app.post(
+  "/api/admin/login/initiate",
+  [
+    body("email").isEmail().withMessage("Valid email required"),
+    body("password").notEmpty().withMessage("Password required"),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      const user = await User.findOne({ email });
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ success: false, message: "Admin account not found" });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, message: "Invalid password" });
+      }
+
+      // Generate OTP
+      const otp = generateOTP();
+      otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+      // Send via both channels simultaneously
+      const [emailResult, smsResult] = await Promise.allSettled([
+        sendEmailOTP(email, otp),
+        sendSMSOTP(otp),
+      ]);
+
+      if (emailResult.status === "rejected") {
+        console.error("Email OTP failed:", emailResult.reason?.message);
+      }
+      if (smsResult.status === "rejected") {
+        console.error("SMS OTP failed:", smsResult.reason?.message);
+      }
+
+      // If both failed, inform admin
+      if (emailResult.status === "rejected" && smsResult.status === "rejected") {
+        return res.status(500).json({ success: false, message: "Failed to send OTP. Check server config." });
+      }
+
+      res.json({
+        success: true,
+        message: `OTP sent to your email${process.env.ADMIN_PHONE ? " and phone" : ""}`,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
+
+/* ≡ STEP 2 — Verify OTP, issue JWT */
+app.post(
+  "/api/admin/login/verify",
+  [
+    body("email").isEmail().withMessage("Valid email required"),
+    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+
+      const stored = otpStore.get(email);
+
+      if (!stored) {
+        return res.status(400).json({ success: false, message: "OTP not found. Please login again." });
+      }
+
+      if (Date.now() > stored.expiresAt) {
+        otpStore.delete(email);
+        return res.status(400).json({ success: false, message: "OTP expired. Please login again." });
+      }
+
+      if (stored.otp !== otp) {
+        return res.status(401).json({ success: false, message: "Incorrect OTP" });
+      }
+
+      // OTP verified — clear and issue JWT
+      otpStore.delete(email);
+
+      const user = await User.findOne({ email });
+      const token = jwt.sign(
+        { userId: user._id, isAdmin: true },
+        process.env.JWT_SECRET,
+        { expiresIn: "12h" }
+      );
+
+      res.json({
+        success: true,
+        token,
+        name: user.firstName,
+        isAdmin: true,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
 
 /* =======================================================
    🔐 ADMIN MIDDLEWARE
