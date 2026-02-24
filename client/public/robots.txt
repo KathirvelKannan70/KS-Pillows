@@ -1,0 +1,10 @@
+# Allow all robots to crawl the site
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.kspillows.in/sitemap.xml
+
+# Disallow admin or private pages if needed
+# Disallow: /admin
+# Disallow: /private
