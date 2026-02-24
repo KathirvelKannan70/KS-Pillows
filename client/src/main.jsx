@@ -9,7 +9,7 @@ import "./index.css";
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <GoogleOAuthProvider clientId="489108130681-lu33oio3v7spe8b33ue9f6km1cn4g1gp.apps.googleusercontent.com">
         <App />
       </GoogleOAuthProvider>
       <Toaster
