@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import Loader from "../components/Loader";
@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 
 export default function ProductDetails() {
   const { category, id } = useParams();
+  const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,14 @@ export default function ProductDetails() {
   /* ================= ADD TO CART ================= */
   const handleAddToCart = async () => {
     try {
+      // ✅ Check if user is logged in
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Please login first");
+        navigate("/login");
+        return;
+      }
+
       if (!product) return;
 
       setAdding(true);

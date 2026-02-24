@@ -63,15 +63,8 @@ function App() {
           {/* 📦 Category page (public) */}
           <Route path="/products/:category" element={<CategoryProducts />} />
 
-          {/* 🔒 Product details must login */}
-          <Route
-            path="/product/:category/:id"
-            element={
-              <ProtectedRoute>
-                <ProductDetails />
-              </ProtectedRoute>
-            }
-          />
+          {/* � Product details - public, only add to cart needs login */}
+          <Route path="/product/:category/:id" element={<ProductDetails />} />
           <Route
           path="/checkout"
           element={
