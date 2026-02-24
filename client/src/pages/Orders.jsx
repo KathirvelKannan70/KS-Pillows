@@ -3,105 +3,181 @@ import api from "../api/axios";
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 
+const STEPS = ["Placed", "Confirmed", "Shipped", "Delivered"];
+
+const STATUS_COLORS = {
+  Placed: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  Confirmed: "bg-blue-100 text-blue-700 border-blue-200",
+  Shipped: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  Delivered: "bg-green-100 text-green-700 border-green-200",
+  Cancelled: "bg-red-100 text-red-700 border-red-200",
+};
+
+const STATUS_ICONS = {
+  Placed: "🛒",
+  Confirmed: "✅",
+  Shipped: "🚚",
+  Delivered: "📦",
+  Cancelled: "❌",
+};
+
+function OrderProgressBar({ status }) {
+  if (status === "Cancelled") {
+    return (
+      <div className="flex items-center gap-2 mt-4 text-sm text-red-600 font-medium">
+        <span>❌</span> Order Cancelled
+      </div>
+    );
+  }
+
+  const currentIdx = STEPS.indexOf(status);
+
+  return (
+    <div className="mt-5">
+      <div className="flex items-center justify-between relative">
+        {/* Progress line */}
+        <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 z-0" />
+        <div
+          className="absolute top-4 left-0 h-0.5 bg-red-500 z-0 transition-all duration-500"
+          style={{ width: `${(currentIdx / (STEPS.length - 1)) * 100}%` }}
+        />
+
+        {STEPS.map((step, idx) => {
+          const isDone = idx <= currentIdx;
+          return (
+            <div key={step} className="flex flex-col items-center z-10 gap-1" style={{ minWidth: 60 }}>
+              {/* Circle */}
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all
+                  ${isDone
+                    ? "bg-red-600 border-red-600 text-white"
+                    : "bg-white border-gray-300 text-gray-400"}`}
+              >
+                {isDone ? "✓" : idx + 1}
+              </div>
+              {/* Label */}
+              <span className={`text-[11px] text-center font-medium ${isDone ? "text-red-600" : "text-gray-400"}`}>
+                {step}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  /* ================= FETCH ORDERS ================= */
-  const fetchOrders = async () => {
-    try {
-      const res = await api.get("/orders");
-
-      if (res.data.success) {
-        setOrders(res.data.orders || []);
-      } else {
-        toast.error("Failed to load orders");
-      }
-    } catch (err) {
-      console.error("Orders fetch error:", err);
-      toast.error("Failed to load orders");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await api.get("/orders");
+        if (res.data.success) setOrders(res.data.orders || []);
+        else toast.error("Failed to load orders");
+      } catch {
+        toast.error("Failed to load orders");
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchOrders();
   }, []);
 
   if (loading) return <Loader />;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
+    <div className="max-w-4xl mx-auto px-4 py-10">
       <h1 className="text-3xl font-bold mb-8">My Orders 📦</h1>
 
       {orders.length === 0 ? (
-        <div className="text-center py-24 text-gray-500">
-          You have no orders yet.
+        <div className="text-center py-24 text-gray-400">
+          <div className="text-6xl mb-4">📭</div>
+          <p className="text-lg">You haven't placed any orders yet.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {orders.map((order) => (
             <div
               key={order._id}
-              className="bg-white rounded-2xl shadow-sm border p-6"
+              className="bg-white rounded-2xl shadow-sm border overflow-hidden"
             >
-              {/* Header */}
-              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-4">
+              {/* ── Order header ── */}
+              <div
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-5 cursor-pointer hover:bg-gray-50 transition"
+                onClick={() => setExpanded(expanded === order._id ? null : order._id)}
+              >
                 <div>
-                  <p className="font-semibold">
-                    Order ID:{" "}
-                    <span className="text-gray-600 text-sm">
-                      {order._id}
-                    </span>
+                  <p className="text-xs text-gray-400 mb-0.5">
+                    #{order._id.slice(-10).toUpperCase()}
                   </p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(order.createdAt).toLocaleString()}
+                  <p className="font-semibold text-gray-800">
+                    {order.items?.length} item{order.items?.length !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(order.createdAt).toLocaleString("en-IN", {
+                      day: "numeric", month: "short", year: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
                   </p>
                 </div>
 
-                <div className="text-red-600 font-bold text-lg">
-                  ₹{order.totalPrice}
+                <div className="flex items-center gap-3">
+                  {/* Status badge */}
+                  <span className={`text-xs px-3 py-1 rounded-full border font-semibold ${STATUS_COLORS[order.status] || "bg-gray-100 text-gray-600"}`}>
+                    {STATUS_ICONS[order.status]} {order.status}
+                  </span>
+                  <span className="font-bold text-red-600 text-lg">₹{order.totalPrice}</span>
+                  <span className="text-gray-400 text-sm">{expanded === order._id ? "▲" : "▼"}</span>
                 </div>
               </div>
 
-              {/* Items */}
-              <div className="space-y-3 border-t pt-4">
-                {order.items.map((item) => (
-                  <div
-                    key={item.productId}
-                    className="flex gap-4 items-center"
-                  >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
+              {/* ── Progress bar ── */}
+              <div className="px-5 pb-4">
+                <OrderProgressBar status={order.status} />
+              </div>
 
-                    <div className="flex-1">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-gray-500">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
-
-                    <div className="font-semibold text-red-600">
-                      ₹{item.price * item.quantity}
+              {/* ── Expanded details ── */}
+              {expanded === order._id && (
+                <div className="border-t px-5 py-5 grid md:grid-cols-2 gap-6">
+                  {/* Items */}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600 mb-3">Items Ordered</p>
+                    <div className="space-y-3">
+                      {order.items.map((item) => (
+                        <div key={item.productId} className="flex gap-3 items-center">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-14 h-14 rounded-lg object-cover bg-gray-100"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                          </div>
+                          <p className="font-semibold text-sm text-red-600">
+                            ₹{item.price * item.quantity}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
 
-              {/* Address */}
-              <div className="mt-5 pt-4 border-t text-sm text-gray-600">
-                <p className="font-semibold mb-1">Delivery Address</p>
-                <p>{order.address.fullName}</p>
-                <p>
-                  {order.address.street}, {order.address.city} -{" "}
-                  {order.address.pincode}
-                </p>
-                <p>📞 {order.address.phone}</p>
-              </div>
+                  {/* Address */}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600 mb-3">Delivery Address</p>
+                    <div className="text-sm text-gray-600 space-y-1 bg-gray-50 rounded-xl p-4">
+                      <p className="font-medium">{order.address?.fullName}</p>
+                      <p>{order.address?.street}</p>
+                      <p>{order.address?.city} — {order.address?.pincode}</p>
+                      <p>📞 {order.address?.phone}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
