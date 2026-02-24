@@ -253,6 +253,86 @@ app.post("/api/auth/google", async (req, res) => {
   }
 });
 
+/* ================= FORGOT PASSWORD ================= */
+app.post(
+  "/api/forgot-password",
+  [body("email").isEmail().withMessage("Valid email required").normalizeEmail()],
+  validate,
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await User.findOne({ email });
+
+      // Always respond success to avoid email enumeration
+      res.json({ success: true, message: "If that email exists, a reset link has been sent." });
+
+      if (!user) return;
+
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      user.resetToken = resetToken;
+      user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      await user.save();
+
+      const resetUrl = `${process.env.CLIENT_URL || "https://www.kspillows.in"}/reset-password?token=${resetToken}`;
+
+      resend.emails.send({
+        from: "KS Pillows <noreply@kspillows.in>",
+        to: [email],
+        subject: "Reset Your Password — KS Pillows",
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+            <h2 style="color:#dc2626">Password Reset</h2>
+            <p>We received a request to reset your password. Click below to set a new one:</p>
+            <a href="${resetUrl}"
+              style="display:inline-block;background:#dc2626;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0">
+              Reset My Password
+            </a>
+            <p style="color:#888;font-size:12px">This link expires in <strong>1 hour</strong>. If you didn't request this, ignore this email.</p>
+          </div>
+        `,
+      }).catch((err) => console.error("Reset email failed:", err.message));
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
+
+/* ================= RESET PASSWORD ================= */
+app.post(
+  "/api/reset-password",
+  [
+    body("token").notEmpty().withMessage("Token required"),
+    body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      const user = await User.findOne({
+        resetToken: token,
+        resetTokenExpiry: { $gt: new Date() }, // not expired
+      });
+
+      if (!user) {
+        return res.status(400).json({ success: false, message: "Invalid or expired reset link. Please request a new one." });
+      }
+
+      user.password = await bcrypt.hash(password, 10);
+      user.resetToken = undefined;
+      user.resetTokenExpiry = undefined;
+      await user.save();
+
+      res.json({ success: true, message: "Password reset successful! You can now login." });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
+
 /* ================= LOGIN ================= */
 app.post(
   "/api/login",
