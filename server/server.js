@@ -634,15 +634,6 @@ const sendEmailOTP = async (email, otp) => {
   });
 };
 
-// Send OTP via Fast2SMS
-const sendSMSOTP = async (otp) => {
-  const phone = process.env.ADMIN_PHONE;
-  if (!phone || !process.env.FAST2SMS_API_KEY) return;
-
-  const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${process.env.FAST2SMS_API_KEY}&variables_values=${otp}&route=otp&numbers=${phone}`;
-  await fetch(url);
-};
-
 /* ≡ STEP 1 — Verify credentials, send OTP */
 app.post(
   "/api/admin/login/initiate",
@@ -669,20 +660,16 @@ app.post(
       const otp = generateOTP();
       otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
-      // ✅ Respond to client IMMEDIATELY — don't wait for email/SMS
+      // ✅ Respond to client IMMEDIATELY — don't wait for email
       res.json({
         success: true,
-        message: `OTP sent to your email${process.env.ADMIN_PHONE ? " and phone" : ""}`,
+        message: "OTP sent to your email",
       });
 
-      // Send OTP in background (fire-and-forget)
-      Promise.allSettled([
-        sendEmailOTP(email, otp),
-        sendSMSOTP(otp),
-      ]).then(([emailResult, smsResult]) => {
-        if (emailResult.status === "rejected") console.error("Email OTP failed:", emailResult.reason?.message);
-        if (smsResult.status === "rejected") console.error("SMS OTP failed:", smsResult.reason?.message);
-      });
+      // Send email OTP in background
+      sendEmailOTP(email, otp).catch((err) =>
+        console.error("Email OTP failed:", err.message)
+      );
     } catch (err) {
       console.error(err);
       res.status(500).json({ success: false, message: "Server error" });
