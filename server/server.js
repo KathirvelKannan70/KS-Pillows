@@ -14,6 +14,7 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import rateLimit from "express-rate-limit";
 import { body, param, validationResult } from "express-validator";
 
@@ -605,29 +606,14 @@ const otpStore = new Map();
 // Generate 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ✅ Gmail transporter — port 587 STARTTLS (more reliable on cloud hosts)
-const emailTransporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,  // STARTTLS
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+// ✅ Resend client (HTTP-based, works on Render)
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verify SMTP on startup so errors appear in Render logs immediately
-emailTransporter.verify().then(() => {
-  console.log("✅ Gmail SMTP ready");
-}).catch((err) => {
-  console.error("❌ Gmail SMTP error:", err.message);
-});
-
-// Send OTP via Gmail
+// Send OTP via Resend
 const sendEmailOTP = async (email, otp) => {
-  await emailTransporter.sendMail({
-    from: `"KS Pillows Admin" <${process.env.GMAIL_USER}>`,
-    to: email,
+  const { error } = await resend.emails.send({
+    from: "KS Pillows Admin <onboarding@resend.dev>",
+    to: [email],
     subject: "Your Admin Login OTP — KS Pillows",
     html: `
       <div style="font-family:sans-serif;max-width:400px;margin:0 auto">
@@ -639,6 +625,7 @@ const sendEmailOTP = async (email, otp) => {
       </div>
     `,
   });
+  if (error) throw new Error(error.message);
 };
 
 /* ≡ STEP 1 — Verify credentials, send OTP */
