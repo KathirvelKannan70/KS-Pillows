@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
+import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import { body, param, validationResult } from "express-validator";
 
@@ -140,25 +141,73 @@ app.post(
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      // Generate verification token
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+
       const user = new User({
         firstName,
         lastName,
         email,
         password: hashedPassword,
+        verificationToken,
+        isVerified: false,
       });
 
       await user.save();
 
+      // ✅ Respond immediately
       res.json({
         success: true,
-        message: "User registered successfully",
+        message: "Account created! Please check your email to verify your account before logging in.",
       });
+
+      // Send verification email in background
+      const verifyUrl = `${process.env.CLIENT_URL || "https://www.kspillows.in"}/verify-email?token=${verificationToken}`;
+
+      resend.emails.send({
+        from: "KS Pillows <onboarding@resend.dev>",
+        to: [email],
+        subject: "Verify Your Email — KS Pillows",
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+            <h2 style="color:#dc2626">Welcome to KS Pillows, ${firstName}!</h2>
+            <p>Thanks for signing up. Please verify your email address to activate your account.</p>
+            <a href="${verifyUrl}"
+              style="display:inline-block;background:#dc2626;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0">
+              Verify My Email
+            </a>
+            <p style="color:#888;font-size:12px">This link expires in 24 hours. If you didn't sign up, ignore this email.</p>
+          </div>
+        `,
+      }).catch((err) => console.error("Verification email failed:", err.message));
+
     } catch (err) {
       console.error(err);
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
 );
+
+/* ================= VERIFY EMAIL ================= */
+app.get("/api/verify-email/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = await User.findOne({ verificationToken: token });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Invalid or expired verification link" });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "Email verified! You can now login." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 
 /* ================= LOGIN ================= */
 app.post(
@@ -176,9 +225,15 @@ app.post(
       const user = await User.findOne({ email });
 
       if (!user) {
-        return res.json({
+        return res.json({ success: false, message: "User not found" });
+      }
+
+      // ❌ Block unverified users
+      if (!user.isVerified) {
+        return res.status(403).json({
           success: false,
-          message: "User not found",
+          message: "Please verify your email before logging in. Check your inbox.",
+          needsVerification: true,
         });
       }
 

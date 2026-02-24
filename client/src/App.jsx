@@ -18,6 +18,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
+import VerifyEmail from "./pages/VerifyEmail";
 
 function App() {
   const location = useLocation();
@@ -51,6 +52,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route
             path="/cart"
             element={

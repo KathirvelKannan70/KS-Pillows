@@ -15,6 +15,7 @@ export default function Signup() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verified, setVerified] = useState(false);
 
   const handleSignup = async () => {
     // ✅ basic validation
@@ -42,12 +43,7 @@ export default function Signup() {
       );
 
       if (res.data.success) {
-        toast.success("Account created successfully 🎉");
-
-        // ✅ redirect to login after short delay
-        setTimeout(() => {
-          navigate("/login");
-        }, 1400);
+        setVerified(true); // show "check your email" screen
       } else {
         toast.error(res.data.message);
       }
@@ -57,6 +53,25 @@ export default function Signup() {
       setLoading(false);
     }
   };
+
+  // ✅ Show after successful signup
+  if (verified) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-sm p-10 text-center max-w-md w-full">
+          <div className="text-5xl mb-4">📧</div>
+          <h1 className="text-2xl font-bold text-gray-800">Check Your Email!</h1>
+          <p className="text-gray-500 mt-3">
+            We've sent a verification link to your email address.<br />
+            Click the link to activate your account.
+          </p>
+          <p className="text-xs text-gray-400 mt-4">
+            Didn't receive it? Check your spam folder.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-80px)] grid md:grid-cols-2">
