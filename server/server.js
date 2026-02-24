@@ -605,15 +605,22 @@ const otpStore = new Map();
 // Generate 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ✅ Create transporter once at startup (not per-request)
+// ✅ Gmail transporter — port 587 STARTTLS (more reliable on cloud hosts)
 const emailTransporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // SSL
+  port: 587,
+  secure: false,  // STARTTLS
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD,
   },
+});
+
+// Verify SMTP on startup so errors appear in Render logs immediately
+emailTransporter.verify().then(() => {
+  console.log("✅ Gmail SMTP ready");
+}).catch((err) => {
+  console.error("❌ Gmail SMTP error:", err.message);
 });
 
 // Send OTP via Gmail
