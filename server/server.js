@@ -605,17 +605,18 @@ const otpStore = new Map();
 // Generate 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// ✅ Create transporter once at startup (not per-request)
+const emailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
+
 // Send OTP via Gmail
 const sendEmailOTP = async (email, otp) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
-
-  await transporter.sendMail({
+  await emailTransporter.sendMail({
     from: `"KS Pillows Admin" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: "Your Admin Login OTP — KS Pillows",
