@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import About from "./pages/About";
 import Checkout from "./pages/Checkout";
+import Products from "./pages/Products";
 import CategoryProducts from "./pages/CategoryProducts";
 import ProductDetails from "./pages/ProductDetails";
 import Orders from "./pages/Orders";
@@ -31,6 +32,7 @@ function App() {
           {/* 🌐 Public */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/products" element={<Products />} />
           <Route
             path="/cart"
             element={

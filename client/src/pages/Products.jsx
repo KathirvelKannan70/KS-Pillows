@@ -1,0 +1,92 @@
+import { useNavigate } from "react-router-dom";
+
+export default function Products() {
+  const navigate = useNavigate();
+
+  // ✅ All product categories
+  const products = [
+    {
+      name: "Kapok Pillow",
+      slug: "kapok-pillow",
+      image:
+        "https://images.unsplash.com/photo-1582582621959-48d27397dc69?q=80&w=800",
+    },
+    {
+      name: "Recron Pillow",
+      slug: "recron-pillow",
+      image:
+        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=800",
+    },
+    {
+      name: "Kapok Mattresses",
+      slug: "kapok-mattresses",
+      image:
+        "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=800",
+    },
+    {
+      name: "Travel Quilt Bed",
+      slug: "travel-quilt-bed",
+      image:
+        "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?q=80&w=800",
+    },
+    {
+      name: "Korai Pai Bed",
+      slug: "korai-pai-bed",
+      image:
+        "https://images.unsplash.com/photo-1583845112239-97ef1341b271?q=80&w=800",
+    },
+  ];
+
+  const handleClick = (slug) => {
+    navigate(`/products/${slug}`);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto py-16 px-4">
+      {/* 🔴 Page Header */}
+      <div className="mb-12">
+        <h1 className="text-3xl md:text-5xl font-bold text-gray-800">
+          Our Products
+        </h1>
+        <p className="mt-3 text-gray-600 md:text-lg">
+          Explore our premium collection of kapok pillows, mattresses, and more for the perfect sleep experience.
+        </p>
+      </div>
+
+      {/* 🔴 Products Grid */}
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
+        {products.map((item) => (
+          <div
+            key={item.slug}
+            onClick={() => handleClick(item.slug)}
+            className="bg-white rounded-2xl shadow-sm hover:shadow-2xl transition overflow-hidden group cursor-pointer"
+          >
+            {/* 🖼 Image */}
+            <div className="overflow-hidden">
+              <img
+                src={item.image}
+                alt={item.name}
+                className="w-full h-48 object-cover group-hover:scale-105 transition duration-300"
+              />
+            </div>
+
+            {/* 📦 Content */}
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-800">
+                {item.name}
+              </h3>
+
+              <p className="text-gray-500 mt-2">
+                High quality premium product for better comfort.
+              </p>
+
+              <button className="mt-4 text-red-600 font-semibold hover:underline">
+                View Details →
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

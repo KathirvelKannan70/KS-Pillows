@@ -43,18 +43,52 @@ export default function Home() {
 
   return (
     <div>
-      {/* 🔴 Hero */}
-      <div className="bg-red-50 py-20 text-center px-4">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-800">
-          Premium Comfort from{" "}
-          <span className="text-red-600">KS Pillows</span>
-        </h1>
+{/* 🔴 Hero */}
+<div className="bg-red-50 py-20 text-center px-4">
+  <div className="max-w-4xl mx-auto">
+    
+    {/* Main Heading */}
+    <h1 className="text-3xl md:text-5xl font-bold text-gray-800 leading-tight">
+      Premium Kapok Pillows in Tamil Nadu
+    </h1>
 
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Experience the best sleep with our premium kapok and comfort
-          products designed for healthy and peaceful rest.
-        </p>
-      </div>
+    {/* Sub Heading */}
+    <h2 className="mt-3 text-xl md:text-2xl font-semibold text-gray-700">
+      Natural Comfort for Healthy Sleep
+    </h2>
+
+    {/* Brand Line */}
+    <p className="mt-2 text-red-600 font-semibold text-lg">
+      From KS Pillows
+    </p>
+
+    {/* Description */}
+    <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
+      Experience the best sleep with our premium kapok pillows and mattresses
+      designed for healthy and peaceful rest.
+    </p>
+
+    {/* ✅ CTA Buttons (VERY IMPORTANT) */}
+    <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+      <button 
+        onClick={() => navigate('/products')}
+        className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold shadow cursor-pointer"
+      >
+        Shop Now
+      </button>
+
+      <a
+        href="https://wa.me/919943723279"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="border border-red-600 text-red-600 hover:bg-red-50 px-8 py-3 rounded-lg font-semibold"
+      >
+        WhatsApp Order
+      </a>
+    </div>
+
+  </div>
+</div>
 
       {/* 🔴 Products */}
       <div className="max-w-7xl mx-auto py-16 px-4">
