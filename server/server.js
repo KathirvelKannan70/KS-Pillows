@@ -190,7 +190,7 @@ app.post(
       }
 
       const token = jwt.sign(
-        { userId: user._id },
+        { userId: user._id, isAdmin: user.isAdmin },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -200,6 +200,7 @@ app.post(
         message: "Login successful",
         token,
         name: user.firstName,
+        isAdmin: user.isAdmin,
       });
     } catch (err) {
       console.error(err);
@@ -592,6 +593,173 @@ app.get("/api/orders", authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+/* =======================================================
+   🔐 ADMIN MIDDLEWARE
+======================================================= */
+const adminMiddleware = (req, res, next) => {
+  try {
+    const header = req.headers.authorization;
+    if (!header) return res.status(401).json({ success: false, message: "No token" });
+
+    const token = header.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded.isAdmin) {
+      return res.status(403).json({ success: false, message: "Admin access only" });
+    }
+
+    req.userId = decoded.userId;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+};
+
+/* =======================================================
+   🛠️ ADMIN — STATS
+======================================================= */
+app.get("/api/admin/stats", adminMiddleware, async (req, res) => {
+  try {
+    const [totalOrders, totalUsers, totalProducts, orders] = await Promise.all([
+      Order.countDocuments(),
+      User.countDocuments(),
+      Product.countDocuments(),
+      Order.find({}, "totalPrice"),
+    ]);
+
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+    res.json({ success: true, totalOrders, totalUsers, totalProducts, totalRevenue });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* =======================================================
+   🛠️ ADMIN — PRODUCTS
+======================================================= */
+
+/* ≡ GET ALL PRODUCTS (admin) */
+app.get("/api/admin/products", adminMiddleware, async (req, res) => {
+  try {
+    const products = await Product.find({}).sort({ createdAt: -1 });
+    res.json({ success: true, products });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* ≡ ADD PRODUCT */
+app.post(
+  "/api/admin/product",
+  adminMiddleware,
+  [
+    body("name").trim().notEmpty().withMessage("Name is required"),
+    body("productCode").trim().notEmpty().withMessage("Product code is required"),
+    body("category").trim().notEmpty().withMessage("Category is required"),
+    body("price").isFloat({ min: 0 }).withMessage("Valid price is required"),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { name, productCode, category, price, size, weight, description, image } = req.body;
+      const product = new Product({ name, productCode, category, price, size, weight, description, image });
+      await product.save();
+      res.json({ success: true, message: "Product added", product });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
+
+/* ≡ UPDATE PRODUCT */
+app.put(
+  "/api/admin/product/:id",
+  adminMiddleware,
+  [
+    param("id").isMongoId().withMessage("Invalid product ID"),
+    body("price").optional().isFloat({ min: 0 }).withMessage("Valid price required"),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { name, productCode, category, price, size, weight, description, image } = req.body;
+      const product = await Product.findByIdAndUpdate(
+        req.params.id,
+        { name, productCode, category, price, size, weight, description, image },
+        { new: true, runValidators: true }
+      );
+      if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+      res.json({ success: true, message: "Product updated", product });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
+
+/* ≡ DELETE PRODUCT */
+app.delete(
+  "/api/admin/product/:id",
+  adminMiddleware,
+  [param("id").isMongoId().withMessage("Invalid product ID")],
+  validate,
+  async (req, res) => {
+    try {
+      await Product.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: "Product deleted" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
+
+/* =======================================================
+   🛠️ ADMIN — ORDERS
+======================================================= */
+
+/* ≡ GET ALL ORDERS */
+app.get("/api/admin/orders", adminMiddleware, async (req, res) => {
+  try {
+    const orders = await Order.find({}).sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* ≡ UPDATE ORDER STATUS */
+app.put(
+  "/api/admin/order/:id/status",
+  adminMiddleware,
+  [
+    param("id").isMongoId().withMessage("Invalid order ID"),
+    body("status")
+      .isIn(["Placed", "Confirmed", "Shipped", "Delivered", "Cancelled"])
+      .withMessage("Invalid status"),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const order = await Order.findByIdAndUpdate(
+        req.params.id,
+        { status: req.body.status },
+        { new: true }
+      );
+      if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+      res.json({ success: true, message: "Status updated", order });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
 
 /* =======================================================
    🚀 SERVER

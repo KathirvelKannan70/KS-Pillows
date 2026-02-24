@@ -23,11 +23,18 @@ export default function Login() {
         // ✅ store auth
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("userName", res.data.name);
+        localStorage.setItem("isAdmin", res.data.isAdmin ? "true" : "false");
         window.dispatchEvent(new Event("authChanged"));
         toast.success("Welcome back! 🎉");
 
-        // ✅ smooth redirect
-        setTimeout(() => navigate("/"), 800);
+        // ✅ redirect admin to panel, others to home
+        setTimeout(() => {
+          if (res.data.isAdmin) {
+            navigate("/admin");
+          } else {
+            navigate("/");
+          }
+        }, 800);
       } else {
         toast.error(res.data.message);
       }
@@ -40,7 +47,7 @@ export default function Login() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] grid md:grid-cols-2">
-      
+
       {/* 🔴 Left branding panel */}
       <div className="hidden md:flex bg-red-600 text-white items-center justify-center p-10">
         <div className="max-w-md">
@@ -101,7 +108,7 @@ export default function Login() {
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-                    <p className="text-sm text-gray-600 mb-6 mt-3 text-center">
+          <p className="text-sm text-gray-600 mb-6 mt-3 text-center">
             New User?{" "}
             <Link
               to="/signup"

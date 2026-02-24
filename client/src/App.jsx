@@ -13,13 +13,31 @@ import ProductDetails from "./pages/ProductDetails";
 import Orders from "./pages/Orders";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAuth from "./components/ProtectedAuth";
+import AdminRoute from "./components/AdminRoute";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
 
 function App() {
   const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
-  // ✅ Hide footer on auth pages
+  // Hide footer on auth pages and admin
   const hideFooterRoutes = ["/login", "/signup"];
-  const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
+  const shouldHideFooter = hideFooterRoutes.includes(location.pathname) || isAdminRoute;
+
+  // Admin pages have their own full-page layout
+  if (isAdminRoute) {
+    return (
+      <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+        <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
