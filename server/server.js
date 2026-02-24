@@ -195,6 +195,10 @@ app.get("/api/product/:id", async (req, res) => {
 /* ================= DYNAMIC SITEMAP ================= */
 app.get("/sitemap.xml", async (req, res) => {
   try {
+    // Set proper headers
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    
     // Fetch all products from database
     const products = await Product.find({}).sort({ createdAt: -1 });
 
@@ -248,7 +252,8 @@ app.get("/sitemap.xml", async (req, res) => {
     xml += `
 </urlset>`;
 
-    res.header("Content-Type", "application/xml");
+    res.set("Content-Type", "application/xml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=3600");
     res.send(xml);
   } catch (err) {
     console.log("SITEMAP ERROR:", err);
