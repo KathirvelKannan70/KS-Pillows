@@ -32,6 +32,40 @@ export default function ProductDetails() {
           const productImage = product.image || "https://images.unsplash.com/photo-1582582621959-48d27397dc69?q=80&w=800";
 
           setMetaTags(productTitle, productDescription, productUrl, productImage);
+
+          // ✅ JSON-LD structured data for Google Rich Results
+          const existingScript = document.getElementById("product-jsonld");
+          if (existingScript) existingScript.remove();
+
+          const script = document.createElement("script");
+          script.id = "product-jsonld";
+          script.type = "application/ld+json";
+          script.text = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            description:
+              product.description ||
+              `Premium ${product.name} from KS Pillows. Natural comfort for healthy sleep.`,
+            image: product.image,
+            sku: product.productCode || product._id,
+            brand: {
+              "@type": "Brand",
+              name: "KS Pillows",
+            },
+            offers: {
+              "@type": "Offer",
+              price: product.price,
+              priceCurrency: "INR",
+              availability: "https://schema.org/InStock",
+              url: productUrl,
+              seller: {
+                "@type": "Organization",
+                name: "KS Pillows",
+              },
+            },
+          });
+          document.head.appendChild(script);
         } else {
           setProduct(null);
         }

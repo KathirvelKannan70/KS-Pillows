@@ -1,8 +1,20 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CATEGORIES } from "../utils/categories";
+import { setMetaTags } from "../utils/seoHelper";
 
 export default function Products() {
   const navigate = useNavigate();
+
+  // ✅ SEO
+  useEffect(() => {
+    setMetaTags(
+      "All Products - Kapok Pillows, Mattresses & Beds | KS Pillows",
+      "Browse our full range of kapok pillows, recron pillows, kapok mattresses, travel quilt beds and korai pai beds. Natural comfort products from Tamil Nadu.",
+      "https://www.kspillows.in/products",
+      "https://www.kspillows.in/images/kapok-pillow.jpg"
+    );
+  }, []);
 
   const handleClick = (slug) => {
     navigate(`/products/${slug}`);

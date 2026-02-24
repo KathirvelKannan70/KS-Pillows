@@ -2,6 +2,36 @@ import { useParams, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import api from "../api/axios";
 import Loader from "../components/Loader";
+import { setMetaTags } from "../utils/seoHelper";
+
+// ✅ Per-category SEO data
+const CATEGORY_SEO = {
+  "kapok-pillow": {
+    title: "Kapok Pillow - Buy Natural Kapok Pillows Online | KS Pillows",
+    description:
+      "Buy premium kapok pillows online in Tamil Nadu. 100% natural, hypoallergenic, eco-friendly kapok fiber pillows for healthy sleep. Shop KS Pillows.",
+  },
+  "recron-pillow": {
+    title: "Recron Pillow - Buy Recron Fibre Pillows Online | KS Pillows",
+    description:
+      "Shop high-quality recron fibre pillows online. Soft, durable, and affordable recron pillows from KS Pillows, Tamil Nadu.",
+  },
+  "kapok-mattresses": {
+    title: "Kapok Mattress - Buy Natural Kapok Mattresses Online | KS Pillows",
+    description:
+      "Buy natural kapok mattresses online. Eco-friendly, breathable, and comfortable kapok mattresses made in Tamil Nadu by KS Pillows.",
+  },
+  "travel-quilt-bed": {
+    title: "Travel Quilt Bed - Buy Online | KS Pillows",
+    description:
+      "Shop lightweight travel quilt beds online. Perfect for travel, camping, and guest use. Natural comfort from KS Pillows, Tamil Nadu.",
+  },
+  "korai-pai-bed": {
+    title: "Korai Pai Bed - Buy Traditional Korai Mat Bed Online | KS Pillows",
+    description:
+      "Buy traditional korai pai (reed mat) beds online. Natural, cool, and durable korai mat beds from KS Pillows, Tamil Nadu.",
+  },
+};
 
 export default function CategoryProducts() {
   const { category } = useParams();
@@ -34,6 +64,17 @@ export default function CategoryProducts() {
     };
 
     fetchProducts();
+
+    // ✅ Set per-category SEO tags
+    const seo = CATEGORY_SEO[category];
+    if (seo) {
+      setMetaTags(
+        seo.title,
+        seo.description,
+        `https://www.kspillows.in/products/${category}`,
+        "https://www.kspillows.in/images/kapok-pillow.jpg"
+      );
+    }
   }, [category]);
 
   const formatTitle = (slug) =>
@@ -66,7 +107,7 @@ export default function CategoryProducts() {
               <div className="h-48 bg-gray-100 overflow-hidden">
                 <img
                   src={product.image}
-                  alt={product.name}
+                  alt={`${product.name} - Buy Online | KS Pillows`}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                 />
               </div>
