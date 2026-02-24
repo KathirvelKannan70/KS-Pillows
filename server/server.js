@@ -165,7 +165,7 @@ app.post(
       const verifyUrl = `${process.env.CLIENT_URL || "https://www.kspillows.in"}/verify-email?token=${verificationToken}`;
 
       resend.emails.send({
-        from: "KS Pillows <onboarding@resend.dev>",
+        from: "KS Pillows <noreply@kspillows.in>",
         to: [email],
         subject: "Verify Your Email — KS Pillows",
         html: `
@@ -232,7 +232,7 @@ app.post(
       if (!user.isVerified) {
         return res.status(403).json({
           success: false,
-          message: "Please verify your email before logging in. Check your inbox.",
+          message: "Please verify your email before logging in. Check your inbox for the verification link.",
           needsVerification: true,
         });
       }
@@ -667,7 +667,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // Send OTP via Resend
 const sendEmailOTP = async (email, otp) => {
   const { error } = await resend.emails.send({
-    from: "KS Pillows Admin <onboarding@resend.dev>",
+    from: "KS Pillows Admin <noreply@kspillows.in>",
     to: [email],
     subject: "Your Admin Login OTP — KS Pillows",
     html: `
