@@ -122,6 +122,8 @@ router.post("/auth/google", async (req, res, next) => {
         const { email, given_name, family_name, sub: googleId } = ticket.getPayload();
 
         let user = await User.findOne({ email });
+        const isNewUser = !user;
+
         if (!user) {
             user = new User({
                 firstName: given_name || "User",
@@ -138,6 +140,12 @@ router.post("/auth/google", async (req, res, next) => {
 
         const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: "7d" });
         res.json({ success: true, token, name: user.firstName, isAdmin: user.isAdmin });
+
+        // Send welcome email for brand-new Google signups (in background, after response)
+        if (isNewUser) {
+            sendWelcomeEmail(email, given_name || "User")
+                .catch((err) => console.error("Google welcome email failed:", err.message));
+        }
     } catch (err) {
         console.error("Google OAuth error:", err.message);
         res.status(401).json({ success: false, message: "Google login failed" });
