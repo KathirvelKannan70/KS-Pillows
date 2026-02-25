@@ -35,8 +35,9 @@ function OrderProgressBar({ status }) {
   return (
     <div className="mt-5">
       <div className="flex items-center justify-between relative">
-        {/* Progress line */}
+        {/* Progress line bg */}
         <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 z-0" />
+        {/* Progress line fill */}
         <div
           className="absolute top-4 left-0 h-0.5 bg-red-500 z-0 transition-all duration-500"
           style={{ width: `${(currentIdx / (STEPS.length - 1)) * 100}%` }}
@@ -46,16 +47,12 @@ function OrderProgressBar({ status }) {
           const isDone = idx <= currentIdx;
           return (
             <div key={step} className="flex flex-col items-center z-10 gap-1" style={{ minWidth: 60 }}>
-              {/* Circle */}
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all
-                  ${isDone
-                    ? "bg-red-600 border-red-600 text-white"
-                    : "bg-white border-gray-300 text-gray-400"}`}
+                  ${isDone ? "bg-red-600 border-red-600 text-white" : "bg-white border-gray-300 text-gray-400"}`}
               >
                 {isDone ? "✓" : idx + 1}
               </div>
-              {/* Label */}
               <span className={`text-[11px] text-center font-medium ${isDone ? "text-red-600" : "text-gray-400"}`}>
                 {step}
               </span>
@@ -71,6 +68,8 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
+  const [cancelConfirm, setCancelConfirm] = useState(null); // orderId awaiting confirmation
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -86,6 +85,31 @@ export default function Orders() {
     };
     fetchOrders();
   }, []);
+
+  /* ─── Cancel Order ─── */
+  const handleCancelOrder = async (orderId) => {
+    console.log("[Cancel] orderId:", orderId, "type:", typeof orderId);
+    setCancelling(orderId);
+    setCancelConfirm(null);
+    try {
+      const res = await api.post(`/orders/${orderId}/cancel`);
+      if (res.data.success) {
+        toast.success("Order cancelled successfully");
+        setOrders((prev) =>
+          prev.map((o) => (o._id === orderId ? { ...o, status: "Cancelled" } : o))
+        );
+      } else {
+        toast.error(res.data.message || "Could not cancel order");
+      }
+    } catch (err) {
+      console.error("[Cancel] Error:", err.response?.status, err.response?.data);
+      // Show the actual server error message if available
+      const msg = err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || "Failed to cancel order";
+      toast.error(msg);
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   if (loading) return <Loader />;
 
@@ -125,12 +149,51 @@ export default function Orders() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   {/* Status badge */}
                   <span className={`text-xs px-3 py-1 rounded-full border font-semibold ${STATUS_COLORS[order.status] || "bg-gray-100 text-gray-600"}`}>
                     {STATUS_ICONS[order.status]} {order.status}
                   </span>
+
                   <span className="font-bold text-red-600 text-lg">₹{order.totalPrice}</span>
+
+                  {/* ✅ Inline cancel confirmation — no native browser dialog */}
+                  {order.status === "Placed" && cancelling !== order._id && cancelConfirm !== order._id && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCancelConfirm(order._id); }}
+                      className="text-xs text-red-500 border border-red-200 px-3 py-1 rounded-full hover:bg-red-50 transition"
+                    >
+                      Cancel Order
+                    </button>
+                  )}
+
+                  {/* Inline Yes / No prompt */}
+                  {order.status === "Placed" && cancelConfirm === order._id && (
+                    <div
+                      className="flex items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-xs text-gray-600 font-medium">Cancel order?</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleCancelOrder(order._id); }}
+                        className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full transition"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setCancelConfirm(null); }}
+                        className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-full transition"
+                      >
+                        No
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Loading state */}
+                  {cancelling === order._id && (
+                    <span className="text-xs text-gray-400 italic">Cancelling...</span>
+                  )}
+
                   <span className="text-gray-400 text-sm">{expanded === order._id ? "▲" : "▼"}</span>
                 </div>
               </div>
@@ -153,6 +216,7 @@ export default function Orders() {
                             src={item.image}
                             alt={item.name}
                             className="w-14 h-14 rounded-lg object-cover bg-gray-100"
+                            onError={(e) => { e.target.src = "/placeholder.jpg"; }}
                           />
                           <div className="flex-1">
                             <p className="font-medium text-sm">{item.name}</p>

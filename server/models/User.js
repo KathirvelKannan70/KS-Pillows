@@ -11,6 +11,9 @@ const userSchema = new mongoose.Schema(
     verificationToken: { type: String },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
+    // ✅ Admin OTP stored in DB — persists across restarts & multi-instance
+    adminOtp: { type: String },
+    adminOtpExpiry: { type: Date },
   },
   { timestamps: true }
 );
