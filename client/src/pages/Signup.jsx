@@ -191,6 +191,7 @@ export default function Signup() {
               width="360"
               text="continue_with"
               shape="rectangular"
+              use_fedcm_for_prompt={false}
             />
           </div>
         </div>
