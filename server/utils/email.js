@@ -37,16 +37,15 @@ export const sendWelcomeEmail = (email, firstName) => {
     from: FROM,
     reply_to: REPLY_TO,
     to: [email],
-    subject: `Welcome to KS Pillows, ${firstName}! 🎉`,
+    subject: `Your KS Pillows Account is Ready`,
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-        <h2 style="color:#dc2626">You're all set, ${firstName}!</h2>
-        <p>Your email has been verified and your KS Pillows account is now active.</p>
-        <p>Browse our collection of premium pillows and place your first order today.</p>
-        <a href="${baseUrl()}" style="display:inline-block;background:#dc2626;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0">
-          Start Shopping
-        </a>
-        <p style="color:#888;font-size:12px">Thank you for choosing KS Pillows — your comfort is our priority.</p>
+        <h2 style="color:#dc2626">Account Confirmed</h2>
+        <p>Hi ${firstName},</p>
+        <p>Your KS Pillows account has been successfully created and is now active.</p>
+        <p>You can now log in anytime at <a href="${baseUrl()}" style="color:#dc2626">www.kspillows.in</a> to browse products, add items to your cart, and place orders.</p>
+        <p style="margin-top:20px">If you have any questions, reply to this email and we'll be happy to help.</p>
+        <p style="color:#888;font-size:12px;margin-top:24px">— KS Pillows Team</p>
       </div>`,
   });
 };
