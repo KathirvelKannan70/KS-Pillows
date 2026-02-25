@@ -26,7 +26,10 @@ const app = express();
 /* =======================================================
    🧩 MIDDLEWARE
 ======================================================= */
-app.use(helmet()); // ✅ Security headers
+app.use(helmet({
+  crossOriginOpenerPolicy: false,   // Required for Google OAuth popup postMessage
+  crossOriginEmbedderPolicy: false, // Required for external images
+}));
 app.use(
   cors({
     origin: [
