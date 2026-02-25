@@ -7,8 +7,8 @@ const resend = () => {
   return _resend;
 };
 
-const FROM = "KS Pillows <info@kspillows.in>";
-const REPLY_TO = "info@kspillows.in";
+const FROM = "KS Pillows <noreply@kspillows.in>";
+const REPLY_TO = "info@kspillows.in"; // Replies land in Zoho inbox
 const baseUrl = () => process.env.CLIENT_URL || "https://www.kspillows.in";
 
 /* ─── Verification Email ─── */
@@ -74,7 +74,7 @@ export const sendPasswordResetEmail = (email, token) => {
 /* ─── Admin OTP Email ─── */
 export const sendAdminOTP = (email, otp) => {
   return resend().emails.send({
-    from: "KS Pillows Admin <info@kspillows.in>",
+    from: "KS Pillows Admin <noreply@kspillows.in>",
     to: [email],
     subject: "Your Admin Login OTP — KS Pillows",
     html: `
