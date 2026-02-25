@@ -4,30 +4,30 @@ export const CATEGORIES = [
         name: "Kapok Pillow",
         slug: "kapok-pillow",
         image:
-            "https://images.unsplash.com/photo-1582582621959-48d27397dc69?q=80&w=800",
+            "https://drive.google.com/file/d/1qbkPgSumFipNj5FP0mjRUgdhunRUkrh5/view?usp=sharing",
     },
     {
         name: "Recron Pillow",
         slug: "recron-pillow",
         image:
-            "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=800",
+            "https://drive.google.com/file/d/1h8DVJ7OAXds760VioIqSPJArpCoZCZoc/view?usp=drive_link",
     },
     {
         name: "Kapok Mattresses",
         slug: "kapok-mattresses",
         image:
-            "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=800",
+            "https://drive.google.com/file/d/1g3Jlvfh_sSzKnJdjqQi3WSYaviRh-kgk/view?usp=sharing",
     },
     {
         name: "Travel Quilt Bed",
         slug: "travel-quilt-bed",
         image:
-            "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?q=80&w=800",
+            "https://drive.google.com/file/d/1yw6FlbGtXNFfTzewe2Jr3B6Z4cPb8vr9/view?usp=drive_link",
     },
     {
         name: "Korai Pai Bed",
         slug: "korai-pai-bed",
         image:
-            "https://images.unsplash.com/photo-1583845112239-97ef1341b271?q=80&w=800",
+            "https://drive.google.com/file/d/1UAsrv2Rb8EbKGGm7WiGyAvEu7BATHcSx/view?usp=drive_link",
     },
 ];
