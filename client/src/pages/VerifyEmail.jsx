@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 export default function VerifyEmail() {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const token = searchParams.get("token");
 
     const [status, setStatus] = useState("verifying"); // verifying | success | error
@@ -22,6 +23,8 @@ export default function VerifyEmail() {
                 if (res.data.success) {
                     setStatus("success");
                     setMessage(res.data.message);
+                    // Auto-redirect to login after 3 seconds
+                    setTimeout(() => navigate("/login"), 3000);
                 } else {
                     setStatus("error");
                     setMessage(res.data.message);
@@ -52,6 +55,7 @@ export default function VerifyEmail() {
                         <div className="text-5xl mb-4">✅</div>
                         <h1 className="text-2xl font-bold text-gray-800">Email Verified!</h1>
                         <p className="text-gray-500 mt-2">{message}</p>
+                        <p className="text-xs text-gray-400 mt-2">Redirecting to login in a few seconds...</p>
                         <Link
                             to="/login"
                             className="mt-6 inline-block bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition"
