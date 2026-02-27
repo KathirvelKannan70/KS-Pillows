@@ -12,6 +12,9 @@ export default function ProductDetails() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const images = product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean);
 
   /* ================= FETCH PRODUCT ================= */
   useEffect(() => {
@@ -132,13 +135,64 @@ export default function ProductDetails() {
   /* ================= UI ================= */
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 grid md:grid-cols-2 gap-10">
-      {/* 🖼 Image */}
-      <div className="bg-white rounded-2xl shadow p-6">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-96 object-cover rounded-xl"
-        />
+      {/* 🖼 Image Gallery */}
+      <div className="flex flex-col gap-4">
+        {/* Main Image */}
+        <div className="bg-white rounded-2xl shadow p-6 relative h-[450px] flex items-center justify-center group overflow-hidden">
+          {images.length > 0 ? (
+            <>
+              <img
+                src={images[currentIndex]}
+                alt={product.name}
+                className="max-w-full max-h-full object-contain rounded-xl transition-all duration-300"
+              />
+
+              {/* Overlay Navigation Arrows */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg border border-gray-100"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setCurrentIndex((prev) => (prev + 1) % images.length)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg border border-gray-100"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="text-gray-400">No Image Available</div>
+          )}
+        </div>
+
+        {/* Thumbnails Row */}
+        {images.length > 1 && (
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x">
+            {images.map((imgUrl, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentIndex(idx)}
+                className={`snap-center flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${currentIndex === idx ? "border-red-600 shadow-md scale-[1.03]" : "border-transparent opacity-70 hover:opacity-100 shadow-sm"
+                  }`}
+              >
+                <img
+                  src={imgUrl}
+                  className="w-full h-full object-cover bg-white"
+                  alt={`Thumbnail ${idx + 1}`}
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 📦 Details */}
