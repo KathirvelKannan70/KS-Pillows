@@ -10,6 +10,7 @@ const productSchema = new mongoose.Schema(
     weight: String,
     description: String,
     image: String,
+    images: { type: [String], default: [] }, // multiple images for carousel
   },
   { timestamps: true }
 );

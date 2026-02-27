@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 
 const EMPTY_FORM = {
     name: "", productCode: "", category: "kapok-pillow",
-    price: "", size: "", weight: "", description: "", image: "",
+    price: "", size: "", weight: "", description: "", image: "", images: [""],
 };
 
 const CATEGORIES_LIST = [
@@ -35,11 +35,20 @@ export default function AdminProducts() {
     const handleSave = async () => {
         try {
             setSaving(true);
+            const payload = { ...form };
+            // Ensure first image is used as primary image
+            payload.images = (payload.images || []).filter(url => url.trim() !== "");
+            if (payload.images.length > 0) {
+                payload.image = payload.images[0];
+            } else {
+                payload.image = "";
+            }
+
             if (editId) {
-                await api.put(`/admin/product/${editId}`, form);
+                await api.put(`/admin/product/${editId}`, payload);
                 toast.success("Product updated ✅");
             } else {
-                await api.post("/admin/product", form);
+                await api.post("/admin/product", payload);
                 toast.success("Product added ✅");
             }
             setForm(EMPTY_FORM);
@@ -58,6 +67,7 @@ export default function AdminProducts() {
             category: product.category, price: product.price,
             size: product.size || "", weight: product.weight || "",
             description: product.description || "", image: product.image || "",
+            images: product.images?.length ? product.images : (product.image ? [product.image] : [""]),
         });
         setEditId(product._id);
         setShowForm(true);
@@ -112,18 +122,57 @@ export default function AdminProducts() {
                         <div><label className="text-xs text-gray-500 mb-1 block">Weight</label>
                             <input className={inputClass} placeholder="e.g. 500g" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} /></div>
 
-                        <div className="md:col-span-2"><label className="text-xs text-gray-500 mb-1 block">Image URL</label>
-                            <input className={inputClass} placeholder="https://..." value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} /></div>
+                        <div className="md:col-span-2">
+                            <label className="text-xs text-gray-500 mb-2 block">Product Images *</label>
+                            {(form.images || []).map((imgUrl, index) => (
+                                <div key={index} className="flex gap-2 mb-2">
+                                    <input
+                                        className={inputClass}
+                                        placeholder="https://..."
+                                        value={imgUrl}
+                                        onChange={(e) => {
+                                            const newImages = [...(form.images || [])];
+                                            newImages[index] = e.target.value;
+                                            setForm({ ...form, images: newImages });
+                                        }}
+                                    />
+                                    {(form.images || []).length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newImages = form.images.filter((_, i) => i !== index);
+                                                setForm({ ...form, images: newImages });
+                                            }}
+                                            className="bg-red-50 text-red-600 hover:bg-red-100 px-3 rounded-lg font-bold transition-colors"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, images: [...(form.images || []), ""] })}
+                                className="text-xs text-blue-600 font-semibold mt-1 hover:underline flex items-center gap-1"
+                            >
+                                + Add Image
+                            </button>
+                            <p className="text-[10px] text-gray-400 mt-1">First image will be automatically mapped as the primary image.</p>
+                        </div>
 
                         <div className="md:col-span-2"><label className="text-xs text-gray-500 mb-1 block">Description</label>
                             <textarea className={inputClass} rows={3} placeholder="Product description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
                     </div>
 
-                    {/* Preview image */}
-                    {form.image && (
+                    {/* Preview images */}
+                    {form.images && form.images.some(img => img.trim() !== "") && (
                         <div className="mt-4">
-                            <p className="text-xs text-gray-500 mb-1">Image Preview</p>
-                            <img src={form.image} alt="preview" className="h-32 rounded-lg object-cover border" onError={(e) => e.target.style.display = "none"} />
+                            <p className="text-xs text-gray-500 mb-2">Image Previews</p>
+                            <div className="flex gap-4 overflow-x-auto pb-2">
+                                {form.images.filter(img => img.trim() !== "").map((img, idx) => (
+                                    <img key={idx} src={img} alt={`preview-${idx}`} className="h-32 rounded-lg object-cover border min-w-[100px]" onError={(e) => e.target.style.display = "none"} />
+                                ))}
+                            </div>
                         </div>
                     )}
 

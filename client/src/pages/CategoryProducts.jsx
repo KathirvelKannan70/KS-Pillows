@@ -33,6 +33,98 @@ const CATEGORY_SEO = {
   },
 };
 
+// ✅ PRODUCT CARD COMPONENT
+const ProductCard = ({ product, category, navigate }) => {
+  const images = product.images?.length > 0 ? product.images : [product.image].filter(Boolean);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextImage = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  return (
+    <div
+      onClick={() => navigate(`/product/${category}/${product._id}`)}
+      className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition overflow-hidden group cursor-pointer flex flex-col h-full"
+    >
+      {/* Image Carousel */}
+      <div className="relative h-56 bg-gray-100 overflow-hidden">
+        {images.length > 0 ? (
+          <>
+            <img
+              src={images[currentIndex]}
+              alt={`${product.name} - Buy Online | KS Pillows`}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+            />
+
+            {/* Arrows */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-800 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition shadow"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                  </svg>
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-800 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition shadow"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+
+                {/* Dots */}
+                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                  {images.map((_, idx) => (
+                    <div
+                      key={idx}
+                      onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${currentIndex === idx ? "w-5 bg-white shadow" : "w-1.5 bg-white/50 hover:bg-white/80"}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4 flex flex-col flex-grow">
+        <h3 className="font-semibold text-lg text-gray-800 line-clamp-2">
+          {product.name}
+        </h3>
+
+        <p className="text-red-600 font-bold mt-1 mb-auto">
+          ₹{product.price}
+        </p>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/product/${category}/${product._id}`);
+          }}
+          className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition font-medium"
+        >
+          View Details
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function CategoryProducts() {
   const { category } = useParams();
   const navigate = useNavigate();
@@ -96,43 +188,7 @@ export default function CategoryProducts() {
       ) : (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
-            <div
-              key={product._id}
-              onClick={() =>
-                navigate(`/product/${category}/${product._id}`)
-              }
-              className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition overflow-hidden group cursor-pointer"
-            >
-              {/* Image */}
-              <div className="h-48 bg-gray-100 overflow-hidden">
-                <img
-                  src={product.image}
-                  alt={`${product.name} - Buy Online | KS Pillows`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                />
-              </div>
-
-              {/* Content */}
-              <div className="p-4">
-                <h3 className="font-semibold text-lg text-gray-800">
-                  {product.name}
-                </h3>
-
-                <p className="text-red-600 font-bold mt-1">
-                  ₹{product.price}
-                </p>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/product/${category}/${product._id}`);
-                  }}
-                  className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition"
-                >
-                  View Details
-                </button>
-              </div>
-            </div>
+            <ProductCard key={product._id} product={product} category={category} navigate={navigate} />
           ))}
         </div>
       )}

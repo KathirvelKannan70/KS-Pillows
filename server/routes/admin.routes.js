@@ -131,8 +131,8 @@ router.post(
     validate,
     async (req, res, next) => {
         try {
-            const { name, productCode, category, price, size, weight, description, image } = req.body;
-            const product = new Product({ name, productCode, category, price, size, weight, description, image });
+            const { name, productCode, category, price, size, weight, description, image, images } = req.body;
+            const product = new Product({ name, productCode, category, price, size, weight, description, image, images: images || [] });
             await product.save();
             res.json({ success: true, message: "Product added", product });
         } catch (err) {
@@ -152,10 +152,10 @@ router.put(
     validate,
     async (req, res, next) => {
         try {
-            const { name, productCode, category, price, size, weight, description, image } = req.body;
+            const { name, productCode, category, price, size, weight, description, image, images } = req.body;
             const product = await Product.findByIdAndUpdate(
                 req.params.id,
-                { name, productCode, category, price, size, weight, description, image },
+                { name, productCode, category, price, size, weight, description, image, images: images || [] },
                 { new: true, runValidators: true }
             );
             if (!product) return res.status(404).json({ success: false, message: "Product not found" });
