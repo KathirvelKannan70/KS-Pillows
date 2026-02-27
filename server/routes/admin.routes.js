@@ -182,6 +182,16 @@ router.delete(
     }
 );
 
+/* ─── GET ALL USERS ─── */
+router.get("/users", adminMiddleware, async (req, res, next) => {
+    try {
+        const users = await User.find({}).select("-password -adminOtp -adminOtpExpiry -verificationToken -resetToken").sort({ createdAt: -1 });
+        res.json({ success: true, users });
+    } catch (err) {
+        next(err);
+    }
+});
+
 /* ─── GET ALL ORDERS ─── */
 router.get("/orders", adminMiddleware, async (req, res, next) => {
     try {

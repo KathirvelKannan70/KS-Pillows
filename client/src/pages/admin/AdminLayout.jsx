@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const navItems = [
     { label: "📊 Dashboard", path: "/admin" },
+    { label: "👥 Users", path: "/admin/users" },
     { label: "📦 Products", path: "/admin/products" },
     { label: "🛒 Orders", path: "/admin/orders" },
 ];
@@ -32,8 +33,8 @@ export default function AdminLayout({ children }) {
                             key={item.path}
                             to={item.path}
                             className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition ${pathname === item.path
-                                    ? "bg-red-600 text-white"
-                                    : "text-gray-300 hover:bg-gray-800"
+                                ? "bg-red-600 text-white"
+                                : "text-gray-300 hover:bg-gray-800"
                                 }`}
                         >
                             {item.label}
