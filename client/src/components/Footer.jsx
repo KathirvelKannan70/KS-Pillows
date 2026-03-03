@@ -23,8 +23,20 @@ export default function Footer() {
           <div className="flex justify-center gap-6 font-medium">
             <a className="text-gray-600 hover:text-red-600" href="#">Facebook</a>
             <a className="text-gray-600 hover:text-red-600" href="#">Instagram</a>
-            <a className="text-gray-600 hover:text-red-600" href="#">WhatsApp</a>
-            <a className="text-gray-600 hover:text-red-600" href="#">Email</a>
+            <a
+              className="text-gray-600 hover:text-green-600"
+              href="https://wa.me/919943723279"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              WhatsApp
+            </a>
+            <a
+              className="text-gray-600 hover:text-red-600"
+              href="mailto:info@kspillows.in"
+            >
+              Email
+            </a>
           </div>
 
         </div>
