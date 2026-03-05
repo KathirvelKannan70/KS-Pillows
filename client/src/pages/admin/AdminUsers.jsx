@@ -7,12 +7,19 @@ import toast from "react-hot-toast";
 export default function AdminUsers() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
+    const LIMIT = 20;
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (p = 1) => {
+        setLoading(true);
         try {
-            const res = await api.get("/admin/users");
+            const res = await api.get(`/admin/users?page=${p}&limit=${LIMIT}`);
             if (res.data.success) {
                 setUsers(res.data.users);
+                setTotalPages(res.data.totalPages || 1);
+                setTotal(res.data.total || res.data.users.length);
             }
         } catch (err) {
             console.error(err);
@@ -22,9 +29,13 @@ export default function AdminUsers() {
         }
     };
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+    useEffect(() => { fetchUsers(1); }, []);
+
+    const goToPage = (p) => {
+        if (p < 1 || p > totalPages) return;
+        setPage(p);
+        fetchUsers(p);
+    };
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -40,7 +51,7 @@ export default function AdminUsers() {
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Users</h2>
                 <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-lg shadow-sm border">
-                    Total: <span className="font-bold text-gray-800">{users.length}</span>
+                    Total: <span className="font-bold text-gray-800">{total}</span>
                 </div>
             </div>
 
@@ -93,6 +104,27 @@ export default function AdminUsers() {
                             </tbody>
                         </table>
                     </div>
+                </div>
+            )}
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-6">
+                    <button
+                        onClick={() => goToPage(page - 1)}
+                        disabled={page <= 1}
+                        className="px-4 py-1.5 rounded-lg border text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
+                    >
+                        ← Prev
+                    </button>
+                    <span className="text-sm text-gray-600">{page} / {totalPages}</span>
+                    <button
+                        onClick={() => goToPage(page + 1)}
+                        disabled={page >= totalPages}
+                        className="px-4 py-1.5 rounded-lg border text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
+                    >
+                        Next →
+                    </button>
                 </div>
             )}
         </AdminLayout>

@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     isAdmin: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
+    verificationTokenExpiry: { type: Date },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
     // ✅ Admin OTP stored in DB — persists across restarts & multi-instance

@@ -9,6 +9,9 @@ import Order from "../models/Order.js";
 import { adminMiddleware } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import { sendAdminOTP } from "../utils/email.js";
+import { adminLimiter } from "../middleware/rateLimiter.js";
+import { uploadImages } from "../middleware/upload.js";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 const router = express.Router();
 
@@ -17,6 +20,7 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 /* ─── STEP 1: Verify credentials, store OTP in DB, send email ─── */
 router.post(
     "/login/initiate",
+    adminLimiter,
     [
         body("email").isEmail().withMessage("Valid email required"),
         body("password").notEmpty().withMessage("Password required"),
@@ -53,6 +57,7 @@ router.post(
 /* ─── STEP 2: Verify OTP from DB, issue JWT ─── */
 router.post(
     "/login/verify",
+    adminLimiter,
     [
         body("email").isEmail().withMessage("Valid email required"),
         body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
@@ -182,21 +187,33 @@ router.delete(
     }
 );
 
-/* ─── GET ALL USERS ─── */
+/* ─── GET ALL USERS (paginated) ─── */
 router.get("/users", adminMiddleware, async (req, res, next) => {
     try {
-        const users = await User.find({}).select("-password -adminOtp -adminOtpExpiry -verificationToken -resetToken").sort({ createdAt: -1 });
-        res.json({ success: true, users });
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 20);
+        const skip = (page - 1) * limit;
+        const [users, total] = await Promise.all([
+            User.find({}).select("-password -adminOtp -adminOtpExpiry -verificationToken -resetToken").sort({ createdAt: -1 }).skip(skip).limit(limit),
+            User.countDocuments(),
+        ]);
+        res.json({ success: true, users, total, page, totalPages: Math.ceil(total / limit) });
     } catch (err) {
         next(err);
     }
 });
 
-/* ─── GET ALL ORDERS ─── */
+/* ─── GET ALL ORDERS (paginated) ─── */
 router.get("/orders", adminMiddleware, async (req, res, next) => {
     try {
-        const orders = await Order.find({}).sort({ createdAt: -1 });
-        res.json({ success: true, orders });
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 20);
+        const skip = (page - 1) * limit;
+        const [orders, total] = await Promise.all([
+            Order.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Order.countDocuments(),
+        ]);
+        res.json({ success: true, orders, total, page, totalPages: Math.ceil(total / limit) });
     } catch (err) {
         next(err);
     }
@@ -223,6 +240,34 @@ router.put(
             if (!order) return res.status(404).json({ success: false, message: "Order not found" });
             res.json({ success: true, message: "Status updated", order });
         } catch (err) {
+            next(err);
+        }
+    }
+);
+
+/* ─── CLOUDINARY IMAGE UPLOAD ─── */
+router.post(
+    "/upload-image",
+    adminMiddleware,
+    (req, res, next) => {
+        uploadImages(req, res, (err) => {
+            if (err) {
+                return res.status(400).json({ success: false, message: err.message });
+            }
+            next();
+        });
+    },
+    async (req, res, next) => {
+        try {
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({ success: false, message: "No images provided" });
+            }
+            const urls = await Promise.all(
+                req.files.map((file) => uploadToCloudinary(file.buffer, file.originalname))
+            );
+            res.json({ success: true, urls });
+        } catch (err) {
+            console.error("Cloudinary upload error:", err.message);
             next(err);
         }
     }

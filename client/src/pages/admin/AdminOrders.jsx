@@ -19,17 +19,25 @@ export default function AdminOrders() {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(null);
     const [expanded, setExpanded] = useState(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
+    const LIMIT = 20;
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const res = await api.get("/admin/orders");
-                if (res.data.success) setOrders(res.data.orders);
-            } catch (err) { console.error(err); }
-            finally { setLoading(false); }
-        };
-        fetchOrders();
-    }, []);
+    const fetchOrders = async (p = 1) => {
+        setLoading(true);
+        try {
+            const res = await api.get(`/admin/orders?page=${p}&limit=${LIMIT}`);
+            if (res.data.success) {
+                setOrders(res.data.orders);
+                setTotalPages(res.data.totalPages || 1);
+                setTotal(res.data.total || res.data.orders.length);
+            }
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
+    };
+
+    useEffect(() => { fetchOrders(1); }, []);
 
     const handleStatusChange = async (orderId, newStatus) => {
         try {
@@ -46,11 +54,20 @@ export default function AdminOrders() {
 
     if (loading) return <AdminLayout><Loader /></AdminLayout>;
 
+    const goToPage = (p) => {
+        if (p < 1 || p > totalPages) return;
+        setPage(p);
+        fetchOrders(p);
+    };
+
     return (
         <AdminLayout>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                All Orders <span className="text-base font-normal text-gray-400">({orders.length})</span>
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">
+                    All Orders <span className="text-base font-normal text-gray-400">({total})</span>
+                </h2>
+                <span className="text-xs text-gray-400">Page {page} of {totalPages}</span>
+            </div>
 
             <div className="space-y-4">
                 {orders.length === 0 && (
@@ -123,6 +140,27 @@ export default function AdminOrders() {
                     </div>
                 ))}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-6">
+                    <button
+                        onClick={() => goToPage(page - 1)}
+                        disabled={page <= 1}
+                        className="px-4 py-1.5 rounded-lg border text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
+                    >
+                        ← Prev
+                    </button>
+                    <span className="text-sm text-gray-600">{page} / {totalPages}</span>
+                    <button
+                        onClick={() => goToPage(page + 1)}
+                        disabled={page >= totalPages}
+                        className="px-4 py-1.5 rounded-lg border text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
+                    >
+                        Next →
+                    </button>
+                </div>
+            )}
         </AdminLayout>
     );
 }

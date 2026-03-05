@@ -43,7 +43,8 @@ router.post(
             }
             const hashedPassword = await bcrypt.hash(password, 10);
             const verificationToken = crypto.randomBytes(32).toString("hex");
-            const user = new User({ firstName, lastName, email, password: hashedPassword, verificationToken, isVerified: false });
+            const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            const user = new User({ firstName, lastName, email, password: hashedPassword, verificationToken, verificationTokenExpiry, isVerified: false });
             await user.save();
 
             res.json({ success: true, message: "Account created! Please check your email to verify your account before logging in." });
@@ -63,8 +64,15 @@ router.get("/verify-email/:token", async (req, res, next) => {
         if (!user) {
             return res.status(400).json({ success: false, message: "Invalid or expired verification link" });
         }
+        if (user.verificationTokenExpiry && new Date() > user.verificationTokenExpiry) {
+            user.verificationToken = undefined;
+            user.verificationTokenExpiry = undefined;
+            await user.save();
+            return res.status(400).json({ success: false, message: "Verification link has expired. Please sign up again." });
+        }
         user.isVerified = true;
         user.verificationToken = undefined;
+        user.verificationTokenExpiry = undefined;
         await user.save();
 
         res.json({ success: true, message: "Email verified! You can now login." });

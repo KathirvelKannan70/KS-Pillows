@@ -11,6 +11,7 @@ const productSchema = new mongoose.Schema(
     description: String,
     image: String,
     images: { type: [String], default: [] }, // multiple images for carousel
+    stock: { type: Number, default: 999 }, // inventory tracking
   },
   { timestamps: true }
 );
