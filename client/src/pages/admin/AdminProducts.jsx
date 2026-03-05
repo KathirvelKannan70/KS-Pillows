@@ -27,9 +27,7 @@ function ImagePanel({ form, setForm }) {
         Array.from(files).forEach((f) => formData.append("images", f));
         setUploading(true);
         try {
-            const res = await api.post("/admin/upload-image", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            const res = await api.post("/admin/upload-image", formData);
             if (res.data.success) {
                 const newUrls = res.data.urls;
                 const cleaned = (form.images || []).filter((u) => u.trim() !== "");
