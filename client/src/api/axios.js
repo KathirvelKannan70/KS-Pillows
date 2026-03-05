@@ -11,8 +11,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  // Ensure proper headers
-  config.headers["Content-Type"] = "application/json";
+  // Don't override Content-Type for FormData (file uploads) — let Axios set the boundary
+  if (!(config.data instanceof FormData)) {
+    config.headers["Content-Type"] = "application/json";
+  }
   return config;
 });
 
