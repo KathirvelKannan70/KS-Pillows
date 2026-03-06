@@ -1,4 +1,4 @@
-// Clean up database — removes all test data, keeps admin user + products
+// 🧹 Full DB cleanup — deletes all test data, keeps admin + products
 // Run: node scripts/cleanupDB.js
 import dotenv from "dotenv";
 import path from "path";
@@ -17,15 +17,15 @@ console.log("Connected ✅\n");
 
 // Delete all non-admin users
 const users = await User.deleteMany({ isAdmin: { $ne: true } });
-console.log(`🗑️  Users deleted:   ${users.deletedCount}`);
+console.log(`🗑️  Users deleted:     ${users.deletedCount}`);
 
 // Delete all orders
 const orders = await Order.deleteMany({});
-console.log(`🗑️  Orders deleted:  ${orders.deletedCount}`);
+console.log(`🗑️  Orders deleted:    ${orders.deletedCount}`);
 
 // Delete all carts
 const carts = await Cart.deleteMany({});
-console.log(`🗑️  Carts deleted:   ${carts.deletedCount}`);
+console.log(`🗑️  Carts deleted:     ${carts.deletedCount}`);
 
 // Delete all addresses
 const addresses = await Address.deleteMany({});
@@ -33,8 +33,8 @@ console.log(`🗑️  Addresses deleted: ${addresses.deletedCount}`);
 
 // Confirm admin still exists
 const admin = await User.findOne({ isAdmin: true });
-console.log(`\n✅ Admin account kept: ${admin?.email}`);
+console.log(`\n✅ Admin kept: ${admin?.email || "⚠️  No admin found!"}`);
 
 await mongoose.disconnect();
-console.log("\nDatabase cleanup complete. Fresh start! 🚀");
+console.log("\nCleanup complete — fresh start! 🚀");
 process.exit(0);
