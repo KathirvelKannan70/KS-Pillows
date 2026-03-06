@@ -10,9 +10,11 @@ const orderSchema = new mongoose.Schema(
       {
         productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
         name: String,
+        productCode: { type: String, default: "" },
         price: Number,
         image: String,
         quantity: Number,
+        variantLabel: { type: String, default: "" },
       },
     ],
     address: {

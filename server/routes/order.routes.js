@@ -5,6 +5,7 @@ import Order from "../models/Order.js";
 import Cart from "../models/Cart.js";
 import Address from "../models/Address.js";
 import User from "../models/User.js";
+import Product from "../models/Product.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import { sendOrderConfirmationEmail } from "../utils/email.js";
@@ -32,12 +33,28 @@ router.post(
                 return res.json({ success: false, message: "Cart is empty" });
             }
 
-            const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-            const totalPrice = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            // Enrich cart items with productCode from Product collection
+            const productIds = cart.items.map((i) => i.productId);
+            const products = await Product.find({ _id: { $in: productIds } }).select("productCode");
+            const productCodeMap = {};
+            products.forEach((p) => { productCodeMap[p._id.toString()] = p.productCode || ""; });
+
+            const enrichedItems = cart.items.map((item) => ({
+                productId: item.productId,
+                name: item.name,
+                productCode: productCodeMap[item.productId.toString()] || "",
+                price: item.price,
+                image: item.image,
+                quantity: item.quantity,
+                variantLabel: item.variantLabel || "",
+            }));
+
+            const totalItems = enrichedItems.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = enrichedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
             const order = new Order({
                 userId,
-                items: cart.items,
+                items: enrichedItems,
                 address: selectedAddress,
                 totalItems,
                 totalPrice,

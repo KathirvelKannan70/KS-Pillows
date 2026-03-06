@@ -113,11 +113,23 @@ export default function AdminOrders() {
                                     <p className="text-sm font-semibold text-gray-600 mb-3">Items ({order.totalItems})</p>
                                     <div className="space-y-3">
                                         {order.items.map((item) => (
-                                            <div key={item.productId} className="flex gap-3 items-center">
+                                            <div key={`${item.productId}-${item.variantLabel || ""}`} className="flex gap-3 items-center">
                                                 <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover bg-gray-100" />
                                                 <div className="flex-1">
-                                                    <p className="font-medium text-sm">{item.name}</p>
-                                                    <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                                                    <p className="font-medium text-sm">
+                                                        {item.name}
+                                                        {item.variantLabel && (
+                                                            <span className="ml-2 text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded-full font-medium">
+                                                                {item.variantLabel}
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">
+                                                        Qty: {item.quantity}
+                                                        {item.productCode && (
+                                                            <span className="ml-2 text-gray-400">· Code: <span className="font-mono text-gray-500">{item.productCode}</span></span>
+                                                        )}
+                                                    </p>
                                                 </div>
                                                 <p className="font-semibold text-sm text-red-600">₹{item.price * item.quantity}</p>
                                             </div>
