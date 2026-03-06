@@ -210,21 +210,39 @@ export default function AdminProducts() {
             const payload = { ...form };
             payload.images = (payload.images || []).filter((url) => url.trim() !== "");
             payload.image = payload.images[0] || "";
-            // Clean and validate variants
-            payload.variants = (payload.variants || []).filter(v => v.label.trim() && v.price);
-            // If no variants, price field is required
-            if (payload.variants.length === 0 && !payload.price) {
+
+            // Clean variants — convert price to Number
+            payload.variants = (payload.variants || [])
+                .filter(v => v.label.trim() && v.price)
+                .map(v => ({ ...v, price: Number(v.price) }));
+
+            // Always ensure price is a valid number
+            if (payload.variants.length > 0) {
+                payload.price = payload.variants[0].price; // use first variant price as base
+            } else if (!payload.price) {
                 toast.error("Enter a price or add at least one variant");
                 setSaving(false);
                 return;
+            } else {
+                payload.price = Number(payload.price);
             }
 
             if (editId) {
-                await api.put(`/admin/product/${editId}`, payload);
-                toast.success("Product updated ✅");
+                const res = await api.put(`/admin/product/${editId}`, payload);
+                if (res.data.success) {
+                    toast.success("Product updated ✅");
+                } else {
+                    toast.error(res.data.message || "Update failed");
+                    return;
+                }
             } else {
-                await api.post("/admin/product", payload);
-                toast.success("Product added ✅");
+                const res = await api.post("/admin/product", payload);
+                if (res.data.success) {
+                    toast.success("Product added ✅");
+                } else {
+                    toast.error(res.data.message || "Add failed");
+                    return;
+                }
             }
             setForm(EMPTY_FORM);
             setEditId(null);
@@ -235,6 +253,7 @@ export default function AdminProducts() {
             toast.error(msg);
         } finally { setSaving(false); }
     };
+
 
     const handleEdit = (product) => {
         setForm({

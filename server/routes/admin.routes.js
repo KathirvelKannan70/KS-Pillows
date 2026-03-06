@@ -131,7 +131,7 @@ router.post(
         body("name").trim().notEmpty().withMessage("Name is required"),
         body("productCode").trim().notEmpty().withMessage("Product code is required"),
         body("category").trim().notEmpty().withMessage("Category is required"),
-        body("price").optional({ nullable: true }).isFloat({ min: 0 }).withMessage("Valid price is required"),
+        body("price").optional({ values: "falsy" }).isFloat({ min: 0 }).withMessage("Valid price is required"),
     ],
     validate,
     async (req, res, next) => {
@@ -160,7 +160,7 @@ router.put(
     adminMiddleware,
     [
         param("id").isMongoId().withMessage("Invalid product ID"),
-        body("price").optional({ nullable: true }).isFloat({ min: 0 }).withMessage("Valid price required"),
+        body("price").optional({ values: "falsy" }).isFloat({ min: 0 }).withMessage("Valid price required"),
     ],
     validate,
     async (req, res, next) => {
