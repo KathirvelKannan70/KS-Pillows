@@ -1,7 +1,7 @@
 import { useState } from "react";
 import api from "../api/axios";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
 export default function Signup() {
@@ -34,7 +34,7 @@ export default function Signup() {
         toast.error(res.data.message);
       }
     } catch (err) {
-      toast.error("Google signup failed");
+      toast.error(err.response?.data?.message || "Google signup failed. Please try again.");
     }
   };
 
@@ -194,6 +194,14 @@ export default function Signup() {
               use_fedcm_for_prompt={false}
             />
           </div>
+
+          {/* Already have account */}
+          <p className="text-sm text-gray-600 mt-5 text-center">
+            Already have an account?{" "}
+            <Link to="/login" className="text-red-600 font-semibold hover:underline">
+              Sign In
+            </Link>
+          </p>
         </div>
       </div>
     </div>

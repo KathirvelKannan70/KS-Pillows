@@ -65,10 +65,12 @@ router.get("/verify-email/:token", async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Invalid or expired verification link" });
         }
         if (user.verificationTokenExpiry && new Date() > user.verificationTokenExpiry) {
-            user.verificationToken = undefined;
-            user.verificationTokenExpiry = undefined;
-            await user.save();
-            return res.status(400).json({ success: false, message: "Verification link has expired. Please sign up again." });
+            // ✅ Delete the unverified user so they can sign up again with the same email
+            await User.deleteOne({ _id: user._id });
+            return res.status(400).json({
+                success: false,
+                message: "Verification link expired. Please sign up again with the same email.",
+            });
         }
         user.isVerified = true;
         user.verificationToken = undefined;
@@ -77,7 +79,6 @@ router.get("/verify-email/:token", async (req, res, next) => {
 
         res.json({ success: true, message: "Email verified! You can now login." });
 
-        // Welcome email sent after successful verification
         sendWelcomeEmail(user.email, user.firstName)
             .catch((err) => console.error("Welcome email failed:", err.message));
     } catch (err) {
@@ -121,13 +122,17 @@ router.post(
 );
 
 /* ─── GOOGLE OAUTH ─── */
-router.post("/auth/google", async (req, res, next) => {
+router.post("/auth/google", authLimiter, async (req, res, next) => {
     try {
         const { credential } = req.body;
         if (!credential) return res.status(400).json({ success: false, message: "No credential" });
 
         const ticket = await googleClient().verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
-        const { email, given_name, family_name, sub: googleId } = ticket.getPayload();
+        const { email: rawEmail, given_name, family_name, sub: googleId } = ticket.getPayload();
+
+        // ✅ Normalize email the SAME way express-validator normalizeEmail() does during signup
+        // This prevents duplicate accounts for Gmail users (e.g. john.doe vs johndoe)
+        const email = rawEmail.toLowerCase().trim();
 
         let user = await User.findOne({ email });
         const isNewUser = !user;
@@ -142,6 +147,7 @@ router.post("/auth/google", async (req, res, next) => {
             });
             await user.save();
         } else if (!user.isVerified) {
+            // Existing unverified email/password user — Google proves ownership, mark verified
             user.isVerified = true;
             await user.save();
         }
@@ -149,14 +155,18 @@ router.post("/auth/google", async (req, res, next) => {
         const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: "7d" });
         res.json({ success: true, token, name: user.firstName, isAdmin: user.isAdmin });
 
-        // Send welcome email for brand-new Google signups (in background, after response)
         if (isNewUser) {
             sendWelcomeEmail(email, given_name || "User")
                 .catch((err) => console.error("Google welcome email failed:", err.message));
         }
     } catch (err) {
-        console.error("Google OAuth error:", err.message);
-        res.status(401).json({ success: false, message: "Google login failed" });
+        // Log detailed error for debugging on server
+        console.error("Google OAuth error:", err.name, err.message);
+        const userMessage = err.message?.includes("Token used too late") ? "Google session expired. Please try signing in again."
+            : err.message?.includes("Invalid token signature") ? "Google authentication failed. Please try again."
+                : err.message?.includes("Wrong number of segments") ? "Invalid Google credential."
+                    : "Google login failed. Please try again.";
+        res.status(401).json({ success: false, message: userMessage });
     }
 });
 

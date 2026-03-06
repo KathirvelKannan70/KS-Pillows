@@ -62,7 +62,7 @@ export default function Login() {
         toast.error(res.data.message);
       }
     } catch (err) {
-      toast.error("Google login failed");
+      toast.error(err.response?.data?.message || "Google login failed. Please try again.");
     }
   };
 
