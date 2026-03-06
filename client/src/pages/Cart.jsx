@@ -40,15 +40,15 @@ export default function Cart() {
     try {
       const newQty = item.quantity + change;
 
-      // ❌ if becomes zero → remove
       if (newQty <= 0) {
-        await removeItem(item.productId);
+        await removeItem(item.productId, item.variantLabel);
         return;
       }
 
       await api.post("/cart/update", {
         productId: item.productId,
         quantity: newQty,
+        variantLabel: item.variantLabel || "",
       });
 
       await fetchCart();
@@ -60,12 +60,10 @@ export default function Cart() {
   };
 
   /* ================= REMOVE ITEM ================= */
-  const removeItem = async (productId) => {
+  const removeItem = async (productId, variantLabel) => {
     try {
-      await api.post("/cart/remove", { productId });
-
+      await api.post("/cart/remove", { productId, variantLabel: variantLabel || "" });
       toast.success("Item removed");
-
       await fetchCart();
       window.dispatchEvent(new Event("cartUpdated"));
     } catch (err) {
@@ -103,7 +101,7 @@ export default function Cart() {
           <div className="md:col-span-2 space-y-4">
             {cart.items.map((item) => (
               <div
-                key={item.productId}
+                key={`${item.productId}-${item.variantLabel || ""}`}
                 className="flex gap-4 bg-white p-4 rounded-xl shadow-sm"
               >
                 {/* Image */}
@@ -117,6 +115,11 @@ export default function Cart() {
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">
                     {item.name}
+                    {item.variantLabel && (
+                      <span className="ml-2 text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full font-medium">
+                        {item.variantLabel}
+                      </span>
+                    )}
                   </h3>
 
                   <p className="text-red-600 font-bold">
@@ -147,7 +150,7 @@ export default function Cart() {
 
                 {/* Remove */}
                 <button
-                  onClick={() => removeItem(item.productId)}
+                  onClick={() => removeItem(item.productId, item.variantLabel)}
                   className="text-red-500 hover:text-red-700 font-semibold"
                 >
                   Remove

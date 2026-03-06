@@ -219,7 +219,14 @@ export default function Orders() {
                             onError={(e) => { e.target.src = "/placeholder.jpg"; }}
                           />
                           <div className="flex-1">
-                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="font-medium text-sm">
+                              {item.name}
+                              {item.variantLabel && (
+                                <span className="ml-2 text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded-full font-medium">
+                                  {item.variantLabel}
+                                </span>
+                              )}
+                            </p>
                             <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
                           </div>
                           <p className="font-semibold text-sm text-red-600">

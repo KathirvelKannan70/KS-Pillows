@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 const EMPTY_FORM = {
     name: "", productCode: "", category: "kapok-pillow",
     price: "", size: "", weight: "", description: "", image: "", images: [""],
+    variants: [], // [{label, size, weight, price}]
 };
 
 const CATEGORIES_LIST = [
@@ -209,6 +210,14 @@ export default function AdminProducts() {
             const payload = { ...form };
             payload.images = (payload.images || []).filter((url) => url.trim() !== "");
             payload.image = payload.images[0] || "";
+            // Clean and validate variants
+            payload.variants = (payload.variants || []).filter(v => v.label.trim() && v.price);
+            // If no variants, price field is required
+            if (payload.variants.length === 0 && !payload.price) {
+                toast.error("Enter a price or add at least one variant");
+                setSaving(false);
+                return;
+            }
 
             if (editId) {
                 await api.put(`/admin/product/${editId}`, payload);
@@ -234,6 +243,7 @@ export default function AdminProducts() {
             size: product.size || "", weight: product.weight || "",
             description: product.description || "", image: product.image || "",
             images: product.images?.length ? product.images : (product.image ? [product.image] : [""]),
+            variants: product.variants?.length ? product.variants.map(v => ({ ...v })) : [],
         });
         setEditId(product._id);
         setShowForm(true);
@@ -291,9 +301,19 @@ export default function AdminProducts() {
                             </select>
                         </div>
 
+                        {/* Price — only required when no variants */}
                         <div>
-                            <label className="text-xs text-gray-500 mb-1 block">Price (₹) *</label>
-                            <input className={inputClass} type="number" placeholder="e.g. 450" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                            <label className="text-xs text-gray-500 mb-1 block">
+                                Price (₹) {form.variants?.length > 0 ? <span className="text-gray-300">(set per variant below)</span> : "*"}
+                            </label>
+                            <input
+                                className={inputClass}
+                                type="number"
+                                placeholder="e.g. 450"
+                                value={form.price}
+                                disabled={form.variants?.length > 0}
+                                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                            />
                         </div>
 
                         <div>
@@ -309,6 +329,85 @@ export default function AdminProducts() {
                         {/* Cloudinary Image Panel */}
                         <ImagePanel form={form} setForm={setForm} />
 
+                        {/* ── Variants Section ── */}
+                        <div className="md:col-span-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Variants (optional — for multi-size products)</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setForm({ ...form, variants: [...(form.variants || []), { label: "", size: "", weight: "", price: "" }] })}
+                                    className="text-xs text-red-600 font-semibold hover:underline"
+                                >
+                                    + Add Variant
+                                </button>
+                            </div>
+
+                            {(form.variants || []).length === 0 && (
+                                <p className="text-xs text-gray-400 italic">No variants — product has a single price. Add variants for Small / Medium / Large etc.</p>
+                            )}
+
+                            {(form.variants || []).map((v, i) => (
+                                <div key={i} className="grid grid-cols-5 gap-2 mb-2 items-center">
+                                    <input
+                                        className="border p-2 rounded-lg text-sm focus:outline-red-500"
+                                        placeholder="Label (e.g. Small)"
+                                        value={v.label}
+                                        onChange={(e) => {
+                                            const updated = [...form.variants];
+                                            updated[i] = { ...updated[i], label: e.target.value };
+                                            setForm({ ...form, variants: updated });
+                                        }}
+                                    />
+                                    <input
+                                        className="border p-2 rounded-lg text-sm focus:outline-red-500"
+                                        placeholder="Size (e.g. 16x24)"
+                                        value={v.size}
+                                        onChange={(e) => {
+                                            const updated = [...form.variants];
+                                            updated[i] = { ...updated[i], size: e.target.value };
+                                            setForm({ ...form, variants: updated });
+                                        }}
+                                    />
+                                    <input
+                                        className="border p-2 rounded-lg text-sm focus:outline-red-500"
+                                        placeholder="Weight (e.g. 500g)"
+                                        value={v.weight}
+                                        onChange={(e) => {
+                                            const updated = [...form.variants];
+                                            updated[i] = { ...updated[i], weight: e.target.value };
+                                            setForm({ ...form, variants: updated });
+                                        }}
+                                    />
+                                    <input
+                                        className="border p-2 rounded-lg text-sm focus:outline-red-500"
+                                        type="number"
+                                        placeholder="Price (₹)"
+                                        value={v.price}
+                                        onChange={(e) => {
+                                            const updated = [...form.variants];
+                                            updated[i] = { ...updated[i], price: e.target.value };
+                                            setForm({ ...form, variants: updated });
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const updated = form.variants.filter((_, idx) => idx !== i);
+                                            setForm({ ...form, variants: updated });
+                                        }}
+                                        className="bg-red-50 text-red-600 hover:bg-red-100 px-2 py-2 rounded-lg font-bold text-sm transition-colors"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+
+                            {(form.variants || []).length > 0 && (
+                                <p className="text-[10px] text-gray-400 mt-1">Label · Size · Weight · Price — first variant price is used as the base price.</p>
+                            )}
+                        </div>
+
+                        {/* Description */}
                         <div className="md:col-span-2">
                             <label className="text-xs text-gray-500 mb-1 block">Description</label>
                             <textarea className={inputClass} rows={3} placeholder="Product description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />

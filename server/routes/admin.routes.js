@@ -131,13 +131,21 @@ router.post(
         body("name").trim().notEmpty().withMessage("Name is required"),
         body("productCode").trim().notEmpty().withMessage("Product code is required"),
         body("category").trim().notEmpty().withMessage("Category is required"),
-        body("price").isFloat({ min: 0 }).withMessage("Valid price is required"),
+        body("price").optional({ nullable: true }).isFloat({ min: 0 }).withMessage("Valid price is required"),
     ],
     validate,
     async (req, res, next) => {
         try {
-            const { name, productCode, category, price, size, weight, description, image, images } = req.body;
-            const product = new Product({ name, productCode, category, price, size, weight, description, image, images: images || [] });
+            const { name, productCode, category, size, weight, description, image, images, variants } = req.body;
+            // If variants exist, use the first variant's price as the base price
+            const parsedVariants = Array.isArray(variants) ? variants.filter(v => v.label && v.price) : [];
+            const basePrice = parsedVariants.length > 0 ? parsedVariants[0].price : (req.body.price || 0);
+            const product = new Product({
+                name, productCode, category,
+                price: basePrice, size, weight, description,
+                image, images: images || [],
+                variants: parsedVariants,
+            });
             await product.save();
             res.json({ success: true, message: "Product added", product });
         } catch (err) {
@@ -152,15 +160,17 @@ router.put(
     adminMiddleware,
     [
         param("id").isMongoId().withMessage("Invalid product ID"),
-        body("price").optional().isFloat({ min: 0 }).withMessage("Valid price required"),
+        body("price").optional({ nullable: true }).isFloat({ min: 0 }).withMessage("Valid price required"),
     ],
     validate,
     async (req, res, next) => {
         try {
-            const { name, productCode, category, price, size, weight, description, image, images } = req.body;
+            const { name, productCode, category, size, weight, description, image, images, variants } = req.body;
+            const parsedVariants = Array.isArray(variants) ? variants.filter(v => v.label && v.price) : [];
+            const basePrice = parsedVariants.length > 0 ? parsedVariants[0].price : (req.body.price || 0);
             const product = await Product.findByIdAndUpdate(
                 req.params.id,
-                { name, productCode, category, price, size, weight, description, image, images: images || [] },
+                { name, productCode, category, price: basePrice, size, weight, description, image, images: images || [], variants: parsedVariants },
                 { new: true, runValidators: true }
             );
             if (!product) return res.status(404).json({ success: false, message: "Product not found" });

@@ -13,8 +13,14 @@ export default function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState(null); // active variant
 
   const images = product?.images?.length > 0 ? product.images : [product?.image].filter(Boolean);
+
+  // Displayed price/size/weight — use variant values if one is selected
+  const displayPrice = selectedVariant ? selectedVariant.price : product?.price;
+  const displaySize = selectedVariant ? selectedVariant.size : product?.size;
+  const displayWeight = selectedVariant ? selectedVariant.weight : product?.weight;
 
   /* ================= FETCH PRODUCT ================= */
   useEffect(() => {
@@ -27,6 +33,13 @@ export default function ProductDetails() {
         if (res.data.success) {
           const product = res.data.product;
           setProduct(product);
+
+          // Auto-select first variant if product has variants
+          if (product.variants && product.variants.length > 0) {
+            setSelectedVariant(product.variants[0]);
+          } else {
+            setSelectedVariant(null);
+          }
 
           // ✅ Set SEO meta tags
           const productUrl = `https://www.kspillows.in/product/${category}/${id}`;
@@ -86,7 +99,6 @@ export default function ProductDetails() {
   /* ================= ADD TO CART ================= */
   const handleAddToCart = async () => {
     try {
-      // ✅ Check if user is logged in
       const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Please login first");
@@ -96,20 +108,24 @@ export default function ProductDetails() {
 
       if (!product) return;
 
+      // If product has variants, a variant must be selected
+      if (product.variants && product.variants.length > 0 && !selectedVariant) {
+        toast.error("Please select a size");
+        return;
+      }
+
       setAdding(true);
 
       await api.post("/cart/add", {
         productId: product._id,
         quantity: 1,
+        ...(selectedVariant ? { variantLabel: selectedVariant.label } : {}),
       });
 
       toast.success("Added to cart 🛒");
-
-      // 🔥 notify navbar badge
       window.dispatchEvent(new Event("cartUpdated"));
     } catch (err) {
       console.error("Cart error:", err);
-
       if (err.response?.status === 401) {
         toast.error("Please login first");
       } else {
@@ -200,22 +216,43 @@ export default function ProductDetails() {
         <h1 className="text-3xl font-bold mb-3">{product.name}</h1>
 
         <p className="text-red-600 text-2xl font-bold mb-4">
-          ₹{product.price}
+          ₹{displayPrice}
         </p>
 
         <p className="text-gray-600 mb-6">
           {product.description || "Premium quality product."}
         </p>
 
+        {/* ── Variant Selector ── */}
+        {product.variants && product.variants.length > 0 && (
+          <div className="mb-6">
+            <p className="text-sm font-semibold text-gray-700 mb-2">Size</p>
+            <div className="flex flex-wrap gap-2">
+              {product.variants.map((v) => (
+                <button
+                  key={v.label}
+                  onClick={() => setSelectedVariant(v)}
+                  className={`px-5 py-2 rounded-full border-2 text-sm font-semibold transition-all ${selectedVariant?.label === v.label
+                      ? "border-red-600 bg-red-600 text-white shadow"
+                      : "border-gray-200 text-gray-700 hover:border-red-400 hover:text-red-600"
+                    }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2 mb-6 text-sm text-gray-700">
           <p>
             <b>Product Code:</b> {product.productCode || "—"}
           </p>
           <p>
-            <b>Size:</b> {product.size || "—"}
+            <b>Size:</b> {displaySize || "—"}
           </p>
           <p>
-            <b>Weight:</b> {product.weight || "—"}
+            <b>Weight:</b> {displayWeight || "—"}
           </p>
         </div>
 

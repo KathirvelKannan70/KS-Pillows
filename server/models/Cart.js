@@ -12,6 +12,7 @@ const cartSchema = new mongoose.Schema({
       price: Number,
       image: String,
       quantity: Number,
+      variantLabel: { type: String, default: "" }, // e.g. "Small", "Medium"
     },
   ],
 }, { timestamps: true });
